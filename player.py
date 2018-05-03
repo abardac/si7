@@ -218,6 +218,9 @@ class Player(object):
         else: 
             return False
 
+    def num_diff_pieces(o_pieces, e_pieces):
+        return len(o_pieces) - len(e_pieces)
+
     #COMPLETE EVALUATION FUNCTION FOR ALPHA BETA
     def eval_placement(total_num_moves,curr_depth,board,player,o_pieces,e_pieces):
         if total_num_moves+curr_depth >= 152 and total_num_moves > 148 and total_num_moves < 152:
@@ -226,15 +229,15 @@ class Player(object):
             return -1000
         return randint(-100,100)
 
-    def eval_move_1():
+    #def eval_move_1():
 
 
 
-    def eval_move_2():
+    #def eval_move_2():
 
 
 
-    def eval_move_3():
+    #def eval_move_3():
 
 
 
@@ -242,7 +245,8 @@ class Player(object):
 
         #depth limit has been reached or game has ended will cause state to be evaluated 
         if curr_depth >= self.p_depth or Player.check_game_end(o_pieces,e_pieces):
-            score = Player.evaluate(self.total_moves,curr_depth,board,player,o_pieces,e_pieces)
+            score = Player.num_diff_pieces(o_pieces, e_pieces)
+            #score = Player.evaluate(self.total_moves,curr_depth,board,player,o_pieces,e_pieces)
             return score
         
         #ensures board is right size before finding all possible moves
