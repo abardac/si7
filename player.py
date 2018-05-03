@@ -219,12 +219,24 @@ class Player(object):
             return False
 
     #COMPLETE EVALUATION FUNCTION FOR ALPHA BETA
-    def evaluate(total_num_moves,curr_depth,board,player,o_pieces,e_pieces):
+    def eval_placement(total_num_moves,curr_depth,board,player,o_pieces,e_pieces):
         if total_num_moves+curr_depth >= 152 and total_num_moves > 148 and total_num_moves < 152:
             return -1000
         if total_num_moves+curr_depth >= 216 and total_num_moves > 212 and total_num_moves < 216: 
             return -1000
         return randint(-100,100)
+
+    def eval_move_1():
+
+
+
+    def eval_move_2():
+
+
+
+    def eval_move_3():
+
+
 
     def alpha_beta(self,alpha, beta, player, board, o_pieces, e_pieces, curr_depth):
 
