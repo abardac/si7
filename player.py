@@ -1,52 +1,89 @@
+from random import *
+import copy
+
 class Player(object):
 
-    best_move = None
-    #depth of alpha beta
-    p_depth = 0
-    gameboard = []
-    total_moves = 0
-    #tracks who's turn it is
-    curr_turn = 'white'
-    whites = []
-    blacks = []
-
     #initialises gameboard with x's in corners
-    def init_gameboard(gameboard):
-        row = []
-        for i in range(8):
-            row.append('-')
-        for j in range(8):
-            Player.gameboard.append(row)
-        Player.gameboard[0][0] = 'x'
-        Player.gameboard[0][7] = 'x'
-        Player.gameboard[7][0] = 'x'
-        Player.gameboard[7][7] = 'x'
+    #adding corners to corner array
+    def init_gameboard(self):
+        gameboard = [
+        ['x','-','-','-','-','-','-','x']
+        ,['-','-','-','-','-','-','-','-']
+        ,['-','-','-','-','-','-','-','-']
+        ,['-','-','-','-','-','-','-','-']
+        ,['-','-','-','-','-','-','-','-']
+        ,['-','-','-','-','-','-','-','-']
+        ,['-','-','-','-','-','-','-','-']
+        ,['x','-','-','-','-','-','-','x']]
+
+        self.corners.append((0,0))
+        self.corners.append((0,7))
+        self.corners.append((7,0))
+        self.corners.append((7,7))
+
+        return gameboard
 
     #will shrink gameboard to required size after certain number of moves
     #used for alpha beta so copies of resources are passed in too
-    def shrink_gameboard(moves,w_pieces,b_pieces,board):
-        if moves == 128:
+    def shrink_gameboard(self,size,o_pieces,e_pieces,board):
+        if size == "medium":
             for i in range(8):
                 for j in range(8):
-                    if i == 0 | i == 7 | j == 0 | j == 7:
-                        if (i,j) in w_pieces: w_pieces.remove((i,j))
-                        if (i,j) in b_pieces: b_pieces.remove((i,j))
-                        board[i][j] = 'x'
+                    if i == 0 or i == 7 or j == 0 or j == 7 or (i,j) == (1,1) or (i,j) == (1,6) or (i,j) == (6,1) or (i,j) == (6,6):
+                        if (i,j) in o_pieces: o_pieces.remove((i,j))
+                        if (i,j) in e_pieces: e_pieces.remove((i,j))
+                        board[i][j] = 'O'
             board[1][1] = 'x'
             board[1][6] = 'x'
             board[6][1] = 'x'
             board[6][6] = 'x'
-        elif moves == 192: 
+            #adds new corners to corner array
+            self.corners.clear()
+            self.corners.append((1,1))
+            self.corners.append((1,6))
+            self.corners.append((6,1))
+            self.corners.append((6,6))
+            #checks for any new captures from corners now that gameboard has shrunk
+            Player.check_corners_after_shrink(self,o_pieces,e_pieces,board)
+        elif size == "small": 
             for i in range(1,7):
                 for j in range(1,7):
-                    if i == 1 | i == 6 | j == 1 | j == 6:
-                        if (i,j) in w_pieces: w_pieces.remove((i,j))
-                        if (i,j) in b_pieces: b_pieces.remove((i,j))
-                        board[i][j] = 'x'
+                    if i == 1 or i == 6 or j == 1 or j == 6 or (i,j) == (2,2) or (i,j) == (2,5) or (i,j) == (5,2) or (i,j) == (5,5):
+                        if (i,j) in o_pieces: o_pieces.remove((i,j))
+                        if (i,j) in e_pieces: e_pieces.remove((i,j))
+                        board[i][j] = 'O'
             board[2][2] = 'x'
             board[2][5] = 'x'
             board[5][2] = 'x'
             board[5][5] = 'x'
+            self.corners.clear()
+            self.corners.append((2,2))
+            self.corners.append((2,5))
+            self.corners.append((5,2))
+            self.corners.append((5,5))
+            Player.check_corners_after_shrink(self,o_pieces,e_pieces,board)
+
+    #checks if any new captures occur at te corners after the gameboard shrinks
+    def check_corners_after_shrink(self,o_pieces,e_pieces,board):
+        #at each corner will check if there are two adjacent opposite coloured pieces in a row
+        #in a certain direction from that corner
+        for corner in self.corners:
+            if (corner[0]+1,corner[1]) in o_pieces and (corner[0]+2,corner[1]) in e_pieces:
+                Player.capture_piece((corner[0]+1,corner[1]),o_pieces,board)
+            if (corner[0]+1,corner[1]) in e_pieces and (corner[0]+2,corner[1]) in o_pieces:
+                Player.capture_piece((corner[0]+1,corner[1]),e_pieces,board)
+            if (corner[0]-1,corner[1]) in o_pieces and (corner[0]-2,corner[1]) in e_pieces:
+                Player.capture_piece((corner[0]-1,corner[1]),o_pieces,board)
+            if (corner[0]-1,corner[1]) in e_pieces and (corner[0]-2,corner[1]) in o_pieces:
+                Player.capture_piece((corner[0]-1,corner[1]),e_pieces,board)
+            if (corner[0],corner[1]+1) in o_pieces and (corner[0],corner[1]+2) in e_pieces:
+                Player.capture_piece((corner[0],corner[1]+1),o_pieces,board)
+            if (corner[0],corner[1]+1) in e_pieces and (corner[0],corner[1]+2) in o_pieces:
+                Player.capture_piece((corner[0],corner[1]+1),e_pieces,board)
+            if (corner[0],corner[1]-1) in o_pieces and (corner[0],corner[1]-2) in e_pieces:
+                Player.capture_piece((corner[0],corner[1]-1),o_pieces,board)
+            if (corner[0],corner[1]-1) in e_pieces and (corner[0],corner[1]-2) in o_pieces:
+                Player.capture_piece((corner[0],corner[1]-1),e_pieces,board)
 
     #removes piece from board and piece array passed in
     #used for alpha beta so copies of resources passed in too
@@ -54,72 +91,72 @@ class Player(object):
         pieces.remove(loc)
         board[loc[0]][loc[1]] = '-'
 
-    #checks if a certain piece is surrounded by pieces of opposite colour
-    #used for alpha beta so copies of resources passed in too
-    def check_for_capture(loc, pieces, board):
-        if (loc[0]+1,loc[1]) in pieces and (loc[0]-1,loc[1]) in pieces:
-            Player.capture_piece(loc, pieces, board)
-        if (loc[0],loc[1]+1) in Player.whites and (loc[0],loc[1]-1) in Player.whites:
-            Player.capture_piece(loc, pieces, board)
-
     #after an action(placement or movement), must check if any pieces are captured
     #used for alpha beta so copies of resources passed in too
-    def check_capture_after_action(action,player,w_pieces,b_pieces,board):
+    def check_capture_after_action(self,action,o_pieces,e_pieces,board):
         #checks for adjacent opposite colour pieces and then checks if 
         #same colour is on other side in the same direction 
-        if player == 'black':
-            if (action[0],action[1]+1) in w_pieces:
-                check_for_capture((action[0],action[1]+1),w_pieces,board)
-            if (action[0],action[1]-1) in w_pieces:
-                check_for_capture((action[0],action[1]-1),w_pieces,board)
-            if (action[0]+1,action[1]) in w_pieces:
-                check_for_capture((action[0]+1,action[1]),w_pieces,board)
-            if (action[0]-1,action[1]) in w_pieces:
-                check_for_capture((action[0]-1,action[1]),w_pieces,board)
-            #check for stupid move(piece moves to where itself is captured)
-            check_for_capture(action, b_pieces, board)
-        else:
-            if (action[0],action[1]+1) in b_pieces:
-                check_for_capture((action[0],action[1]+1),b_pieces,board)
-            if (action[0],action[1]-1) in b_pieces:
-                check_for_capture((action[0],action[1]-1),b_pieces,board)
-            if (action[0]+1,action[1]) in b_pieces:
-                check_for_capture((action[0]+1,action[1]),b_pieces,board)
-            if (action[0]-1,action[1]) in b_pieces:
-                check_for_capture((action[0]-1,action[1]),b_pieces,board)
-            check_for_capture(action, w_pieces, board)
+        if (action[0],action[1]+1) in e_pieces and (action[0],action[1]+2) in o_pieces:
+            Player.capture_piece((action[0],action[1]+1),e_pieces,board)
+        if (action[0],action[1]-1) in e_pieces and (action[0],action[1]-2) in o_pieces:
+            Player.capture_piece((action[0],action[1]-1),e_pieces,board)
+        if (action[0]+1,action[1]) in e_pieces and (action[0]+2,action[1]) in o_pieces:
+            Player.capture_piece((action[0]+1,action[1]),e_pieces,board)
+        if (action[0]-1,action[1]) in e_pieces and (action[0]-2,action[1]) in o_pieces:
+            Player.capture_piece((action[0]-1,action[1]),e_pieces,board)
+
+        #checks against corners too
+        if (action[0],action[1]+1) in e_pieces and (action[0],action[1]+2) in self.corners:
+            Player.capture_piece((action[0],action[1]+1),e_pieces,board)
+        if (action[0],action[1]-1) in e_pieces and (action[0],action[1]-2) in self.corners:
+            Player.capture_piece((action[0],action[1]-1),e_pieces,board)
+        if (action[0]+1,action[1]) in e_pieces and (action[0]+2,action[1]) in self.corners:
+            Player.capture_piece((action[0]+1,action[1]),e_pieces,board)
+        if (action[0]-1,action[1]) in e_pieces and (action[0]-2,action[1]) in self.corners:
+            Player.capture_piece((action[0]-1,action[1]),e_pieces,board)
+
+        #check for stupid move(piece moves to where itself is captured)
+        if (action[0]-1,action[1]) in e_pieces and (action[0]+1,action[1]) in e_pieces:
+            Player.capture_piece(action,o_pieces,board)
+        elif (action[0],action[1]-1) in e_pieces and (action[0],action[1]+1) in e_pieces:
+            Player.capture_piece(action,o_pieces,board)
+        elif (action[0]-1,action[1]) in e_pieces and (action[0]+1,action[1]) in self.corners:
+            Player.capture_piece(action,o_pieces,board)
+        elif (action[0]-1,action[1]) in self.corners and (action[0]+1,action[1]) in e_pieces:
+            Player.capture_piece(action,o_pieces,board)
+        elif (action[0],action[1]-1) in e_pieces and (action[0],action[1]+1) in self.corners:
+            Player.capture_piece(action,o_pieces,board)
+        elif (action[0],action[1]-1) in self.corners and (action[0],action[1]+1) in e_pieces:
+            Player.capture_piece(action,o_pieces,board)
 
     #completes a certain move in the piece array and board passed in
     #used for alpha beta so copies of resources passed in too
-    def complete_move(move,player,w_pieces,b_pieces,board):
-
-        ########################### Need to make sure move isn't of type None ###########################
-        ###########################     Since it can't be subscriptable       ###########################
+    def complete_move(self,move,player,o_pieces,e_pieces,board):
+        
+        move_index = o_pieces.index(move[0])
+        o_pieces[move_index] = move[1]
+        board[move[0][0]][move[0][1]] = '-'
         if player == 'black':
-            move_index = b_pieces.index(move[0])
-            b_pieces[move_index] = move[1]
-            board[move[0][0]][move[0][1]] = '-'
             board[move[1][0]][move[1][1]] = 'B'
         else:
-            move_index = w_pieces.index(move[0])
-            w_pieces[move_index] = move[1]
-            board[move[0][0]][move[0][1]] = '-'
             board[move[1][0]][move[1][1]] = 'W'
-
+       
         #checks whether its move caused a capture
-        Player.check_capture_after_action(move[1],player,w_pieces,b_pieces,board)
+        Player.check_capture_after_action(self,move[1],o_pieces,e_pieces,board)
 
     #completes the placement of a certain piece
     #used for alpha beta so copies of resources passed in too
-    def complete_place(action,player,w_pieces,b_pieces,board):
+    def complete_place(self,action,player,o_pieces,e_pieces,board):
+        
+        if action not in o_pieces:
+                o_pieces.append(action)
+
         if player == 'black':
-            b_pieces.append(action)
             board[action[0]][action[1]] = 'B'
         else:
-            w_pieces.append(action)
             board[action[0]][action[1]] = 'W'
 
-        Player.check_capture_after_action(action,player,w_pieces,b_pieces,board)
+        Player.check_capture_after_action(self,action,o_pieces,e_pieces,board)
     
     #checks whether a movement is possible
     #used for alpha beta so copies of resources passed in too
@@ -136,11 +173,16 @@ class Player(object):
 
     #checks whether a jump is possible
     #used for alpha beta so copies of resources passed in too
-    def can_jump(x,y,mid_x,mid_y,w_pieces,b_pieces,board):
+    def can_jump(x,y,mid_x,mid_y,o_pieces,e_pieces,board):
         if x >= 0 and x <= 7 and y >= 0 and y <= 7:
             #only if theres a piece between dest and a piece's current loc
             #will it possibly be allowed to jump
-            if (mid_x,mid_y) in b_pieces | (mid_x,mid_y) in w_pieces:
+            if (mid_x,mid_y) in o_pieces:
+                if board[x][y] == '-':
+                    return True
+                else: 
+                    return False
+            elif (mid_x,mid_y) in e_pieces:
                 if board[x][y] == '-':
                     return True
                 else: 
@@ -152,79 +194,74 @@ class Player(object):
 
     #finds all possible legal moves capable by a certain player
     ##used for alpha beta so copies of resources passed in too
-    def legal_moves(player,w_pieces,b_pieces,board):
+    def legal_moves(o_pieces,e_pieces,board):
         moves = []
-        if player == 'white':
-            for piece in w_pieces:
-                if Player.can_move(piece[0]+1,piece[1]): moves.append((piece,(piece[0]+1,piece[1])))
-                if Player.can_move(piece[0]-1,piece[1]): moves.append((piece,(piece[0]-1,piece[1])))
-                if Player.can_move(piece[0],piece[1]+1): moves.append((piece,(piece[0],piece[1]+1)))
-                if Player.can_move(piece[0],piece[1]-1): moves.append((piece,(piece[0],piece[1]-1)))
-                if Player.can_jump(piece[0]+2,piece[1],piece[0]+1,piece[1]): moves.append((piece,(piece[0]+2,piece[1])))
-                if Player.can_jump(piece[0]-2,piece[1],piece[0]-1,piece[1]): moves.append((piece,(piece[0]-2,piece[1])))
-                if Player.can_jump(piece[0],piece[1]+2,piece[0],piece[1]+1): moves.append((piece,(piece[0],piece[1]+2)))
-                if Player.can_jump(piece[0],piece[1]-2,piece[0],piece[1]-1): moves.append((piece,(piece[0],piece[1]-2)))
-        if player == 'black':
-            for piece in b_pieces:
-                if Player.can_move(piece[0]+1,piece[1]): moves.append((piece,(piece[0]+1,piece[1])))
-                if Player.can_move(piece[0]-1,piece[1]): moves.append((piece,(piece[0]-1,piece[1])))
-                if Player.can_move(piece[0],piece[1]+1): moves.append((piece,(piece[0],piece[1]+1)))
-                if Player.can_move(piece[0],piece[1]-1): moves.append((piece,(piece[0],piece[1]-1)))
-                if Player.can_jump(piece[0]+2,piece[1],piece[0]+1,piece[1]): moves.append((piece,(piece[0]+2,piece[1])))
-                if Player.can_jump(piece[0]-2,piece[1],piece[0]-1,piece[1]): moves.append((piece,(piece[0]-2,piece[1])))
-                if Player.can_jump(piece[0],piece[1]+2,piece[0],piece[1]+1): moves.append((piece,(piece[0],piece[1]+2)))
-                if Player.can_jump(piece[0],piece[1]-2,piece[0],piece[1]-1): moves.append((piece,(piece[0],piece[1]-2)))
+        for piece in o_pieces:
+            if Player.can_move(piece[0]+1,piece[1],board): moves.append((piece,(piece[0]+1,piece[1])))
+            if Player.can_move(piece[0]-1,piece[1],board): moves.append((piece,(piece[0]-1,piece[1])))
+            if Player.can_move(piece[0],piece[1]+1,board): moves.append((piece,(piece[0],piece[1]+1)))
+            if Player.can_move(piece[0],piece[1]-1,board): moves.append((piece,(piece[0],piece[1]-1)))
+            if Player.can_jump(piece[0]+2,piece[1],piece[0]+1,piece[1],o_pieces,e_pieces,board): moves.append((piece,(piece[0]+2,piece[1])))
+            if Player.can_jump(piece[0]-2,piece[1],piece[0]-1,piece[1],o_pieces,e_pieces,board): moves.append((piece,(piece[0]-2,piece[1])))
+            if Player.can_jump(piece[0],piece[1]+2,piece[0],piece[1]+1,o_pieces,e_pieces,board): moves.append((piece,(piece[0],piece[1]+2)))
+            if Player.can_jump(piece[0],piece[1]-2,piece[0],piece[1]-1,o_pieces,e_pieces,board): moves.append((piece,(piece[0],piece[1]-2)))
 
         return moves
     
     #checks whether the game has ended (no more pieces of a colour)
     #used for alpha beta so copies of resources passed in too
     #EXPAND FOR OTHER SCNARIOS OF GAME ENDING
-    def check_game_end(w_pieces,b_pieces):
+    def check_game_end(o_pieces,e_pieces):
         #check if either piece array is empty 
-        if len(w_pieces) == 0 | len(b_pieces) == 0:
+        if len(o_pieces) == 0 or len(e_pieces) == 0:
             return True
         else: 
             return False
 
     #COMPLETE EVALUATION FUNCTION FOR ALPHA BETA
-    def evaluate(board,player,w_pieces,b_pieces):
-        return 0
+    def evaluate(total_num_moves,curr_depth,board,player,o_pieces,e_pieces):
+        if total_num_moves+curr_depth >= 152 and total_num_moves > 148 and total_num_moves < 152:
+            return -1000
+        if total_num_moves+curr_depth >= 216 and total_num_moves > 212 and total_num_moves < 216: 
+            return -1000
+        return randint(-100,100)
 
-    def alpha_beta(alpha, beta, player, board, w_pieces, b_pieces, curr_depth):
+    def alpha_beta(self,alpha, beta, player, board, o_pieces, e_pieces, curr_depth):
 
         #depth limit has been reached or game has ended will cause state to be evaluated 
-        if curr_depth >= Player.p_depth or Player.check_game_end():
-            score = Player.evaluate(board,player,w_pieces,b_pieces)
+        if curr_depth >= self.p_depth or Player.check_game_end(o_pieces,e_pieces):
+            score = Player.evaluate(self.total_moves,curr_depth,board,player,o_pieces,e_pieces)
             return score
-
+        
         #ensures board is right size before finding all possible moves
-        if Player.total_moves + curr_depth == 128 | Player.total_moves + curr_depth == 192:
-            Player.shrink_gameboard(Player.total_moves+curr_depth,w_pieces,b_pieces,board)
+        if self.total_moves + curr_depth == 152:
+            Player.shrink_gameboard(self,"medium",o_pieces,e_pieces,board)
+        elif self.total_moves + curr_depth == 216:
+            Player.shrink_gameboard(self,"small",o_pieces,e_pieces,board)
 
         #gets all possible moves capable by the specific player
-        poss_moves = Player.legal_moves(player,w_pieces,b_pieces,board)
+        poss_moves = Player.legal_moves(o_pieces,e_pieces,board)
 
-        if player == Player.curr_turn:
+        if player == self.curr_turn:
             for move in poss_moves:
                 #must make copies of all resources before evaluating and furthering search
-                board_copy = list(board)
-                w_p_copy = list(w_pieces)
-                b_p_copy = list(b_pieces)
+                board_copy = copy.deepcopy(board)
+                o_p_copy = copy.deepcopy(o_pieces)
+                e_p_copy = copy.deepcopy(e_pieces)
 
                 #makes move in copied resources 
-                Player.complete_move(move,player,w_p_copy,b_p_copy,board_copy)
+                Player.complete_move(self,move,self.curr_turn,o_p_copy,e_p_copy,board_copy)
 
                 if player == 'black':
                     player = 'white'
                 else:
                     player = 'black'
 
-                score = Player.alpha_beta(alpha,beta,player,board_copy,w_p_copy,b_p_copy,curr_depth+1)
+                score = Player.alpha_beta(self,alpha,beta,player,board_copy,o_p_copy,e_p_copy,curr_depth+1)
 
                 if score > alpha:
                     if curr_depth == 0:
-                        Player.best_move = move
+                        self.best_move = move
                     alpha = score
 
                 if score >= beta:
@@ -233,18 +270,19 @@ class Player(object):
             return alpha
         else:
             for move in poss_moves:
-                board_copy = list(board)
-                w_p_copy = list(w_pieces)
-                b_p_copy = list(b_pieces)
+                board_copy = copy.deepcopy(board)
+                o_p_copy = copy.deepcopy(o_pieces)
+                e_p_copy = copy.deepcopy(e_pieces)
 
-                Player.complete_move(move,player,w_p_copy,b_p_copy,board_copy)
+                Player.complete_move(self,move,player,o_p_copy,e_p_copy,board_copy)
+                
 
                 if player == 'black':
                     player = 'white'
                 else:
                     player = 'black'
 
-                score = Player.alpha_beta(alpha,beta,player,board_copy,w_p_copy,b_p_copy,curr_depth+1)
+                score = Player.alpha_beta(self,alpha,beta,player,board_copy,e_p_copy,o_p_copy,curr_depth+1)
 
                 if score < beta:
                     beta = score
@@ -254,43 +292,124 @@ class Player(object):
 
             return beta
 
+    def random_place(self):
+        if(self.curr_turn == 'white'):
+            fir_lim = 0
+            sec_lim = 5
+        else:
+            fir_lim = 2
+            sec_lim = 7
+        x = randint(fir_lim,sec_lim)
+        y = randint(0,7)
+        invalid_places = [(0,0),(0,7),(7,0),(7,7)]
+        taken = False
+        while(not taken):
+            if (x,y) in self.our_pieces:
+                x = randint(fir_lim,sec_lim)
+                y = randint(0,7)
+            elif (x,y) in self.enemy_pieces:
+                x = randint(fir_lim,sec_lim)
+                y = randint(0,7)
+            elif (x,y) in invalid_places:
+                x = randint(fir_lim,sec_lim)
+                y = randint(0,7)
+            else: 
+                taken = True
+
+        return ((x,y))
+
+    #reverses the ordering of the move 
+    def reverse_move(action):
+        if isinstance(action[0], tuple):
+            fir_x = action[0][0]
+            fir_y = action[0][1]
+            sec_x = action[1][0]
+            sec_y = action[1][1]
+
+            return ((fir_y,fir_x),(sec_y,sec_x))
+        else:
+            fir_x = action[0]
+            fir_y = action[1]
+
+            return (fir_y,fir_x)
+
+
     def __init__(self, colour):
+        self.best_move = None
+        #depth of alpha beta
+        self.p_depth = 2
+        self.total_moves = 0
+        #tracks who's turn it is
+        self.curr_turn = 'white'
+        self.our_pieces = []
+        self.enemy_pieces = []
+        self.corners = []
         self.colour = colour
-        Player.init_gameboard(Player.gameboard)
-        self.p_depth = 8
+        self.gameboard = Player.init_gameboard(self)
+
+    #used for testing to see the current state of our gameboard in a formatted way
+    def print_gameboard(self):
+        for row in self.gameboard:
+            print(row)
 
     def action(self,turns):
-        alpha = Player.alpha_beta(-10000,10000,Player.curr_turn,Player.gameboard,Player.whites,Player.blacks,0)
 
-        if Player.curr_turn == 'black':
-            Player.curr_turn = 'white'
+        #shrinks gameboard at start of turn 128 and 192 for white player (first player to move)
+        if (turns == 128 and self.colour == "white"):
+            Player.shrink_gameboard(self,"medium",self.enemy_pieces,self.our_pieces,self.gameboard)
+        elif (turns == 192 and self.colour == "white"):
+            Player.shrink_gameboard(self,"small",self.enemy_pieces,self.our_pieces,self.gameboard)
+
+        if self.total_moves < 24:
+            rand_place = Player.random_place(self)
+            Player.complete_place(self,rand_place,self.curr_turn,self.our_pieces,self.enemy_pieces,self.gameboard)
+            
+            if self.curr_turn == 'black':
+                self.curr_turn = 'white'
+            else:
+                self.curr_turn = 'black'
+
+            self.total_moves += 1
+
+            return Player.reverse_move(rand_place)
         else:
-            Player.curr_turn = 'black'
+            alpha = Player.alpha_beta(self,-10000,10000,self.curr_turn,self.gameboard,self.our_pieces,self.enemy_pieces,0)
 
-        Player.total_moves += 1
+            # Added here.
+            #print("selected move: ",self.best_move, "curr_turn: ",self.curr_turn, " turns: ", turns)
+            # Added here.
 
-        # Added here.
-        print(Player.best_move)
-        # Added here.
+            Player.complete_move(self,self.best_move,self.curr_turn,self.our_pieces,self.enemy_pieces,self.gameboard)
 
-        Player.complete_move(Player.best_move,Player.curr_turn,Player.whites,Player.blacks,Player.gameboard)
+            if self.curr_turn == 'black':
+                self.curr_turn = 'white'
+            else:
+                self.curr_turn = 'black'
 
-        return Player.best_move
+            self.total_moves += 1
+
+            #shrinks gameboard for black player at the end of their 127 or 191 turn to avoid any corner capture errors
+            if (turns == 127 and self.colour == "black"):
+                Player.shrink_gameboard(self,"medium",self.enemy_pieces,self.our_pieces,self.gameboard)
+            elif (turns == 191 and self.colour == "black"):
+                Player.shrink_gameboard(self,"small",self.enemy_pieces,self.our_pieces,self.gameboard)
+            
+            #print(self.our_pieces)
+            #print(self.enemy_pieces)
+            #Player.print_gameboard(self)
+            return Player.reverse_move(self.best_move)
 
     def update(self, action):
-        Player.total_moves += 1
-        if Player.total_moves == 128 | Player.total_moves == 192:
-            Player.shrink_gameboard()
-
-        ########################### Not sure what action is or if it's initialised ###########################
+        
         if action is not None:
             #checks if action is movement(tuple inside tuple) or placement(single tuple)
             if isinstance(action[0], tuple):
-                Player.complete_move(action)
+                Player.complete_move(self,Player.reverse_move(action),self.curr_turn,self.enemy_pieces,self.our_pieces,self.gameboard)
             else:
-                Player.complete_place(action)
+                Player.complete_place(self,Player.reverse_move(action),self.curr_turn,self.enemy_pieces,self.our_pieces,self.gameboard)
 
-        if Player.curr_turn == 'black':
-            Player.curr_turn = 'white'
+        if self.curr_turn == 'black':
+            self.curr_turn = 'white'
         else:
-            Player.curr_turn = 'black'
+            self.curr_turn = 'black'
+        self.total_moves += 1
