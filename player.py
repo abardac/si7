@@ -256,7 +256,7 @@ class Player(object):
     def chk_two_down(empty_x, empty_y, e_player, board):
         if 0 < empty_y and board[empty_x][empty_y-1] == e_player:
             return True
-        elif 0 < (empty_y-1) and board[empty_x][empty_y-2] == e_player and board[empty_x][empty_y+1] != '-':
+        elif 0 < (empty_y-1) and board[empty_x][empty_y-2] == e_player and board[empty_x][empty_y-1] != '-':
             return True
 
     '''
@@ -361,16 +361,16 @@ class Player(object):
     # Returns the score of a given board state based on placement features.
     def eval_placement(o_pieces, e_pieces, board):
         num_diff_pieces = Player.num_diff_pieces(o_pieces, e_pieces)
-        edan_o_pieces = Player.chk_edan_placement(o_pieces, '@', board)
-        edan_e_pieces = Player.chk_edan_placement(e_pieces, 'O', board)
+        edan_o_pieces = Player.chk_edan_placement(o_pieces, 'B', board)
+        edan_e_pieces = Player.chk_edan_placement(e_pieces, 'W', board)
 
         return 2*num_diff_pieces - edan_o_pieces + edan_e_pieces
 
     # Returns the score of a given board state based on movement features.
     def eval_movement(o_pieces, e_pieces, board):
         num_diff_pieces = Player.num_diff_pieces(o_pieces, e_pieces)
-        edan_o_pieces = Player.chk_edan_movement(o_pieces, '@', board)
-        edan_e_pieces = Player.chk_edan_movement(e_pieces, 'O', board)
+        edan_o_pieces = Player.chk_edan_movement(o_pieces, 'B', board)
+        edan_e_pieces = Player.chk_edan_movement(e_pieces, 'W', board)
 
         return 2*num_diff_pieces - edan_o_pieces + edan_e_pieces
 
