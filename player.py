@@ -40,9 +40,9 @@ class Player(object):
             #adds new corners to corner array
             self.corners.clear()
             self.corners.append((1,1))
-            self.corners.append((1,6))
             self.corners.append((6,1))
             self.corners.append((6,6))
+            self.corners.append((1,6))
             #checks for any new captures from corners now that gameboard has shrunk
             Player.check_corners_after_shrink(self,o_pieces,e_pieces,board)
         elif size == "small": 
@@ -58,9 +58,9 @@ class Player(object):
             board[5][5] = 'x'
             self.corners.clear()
             self.corners.append((2,2))
-            self.corners.append((2,5))
             self.corners.append((5,2))
             self.corners.append((5,5))
+            self.corners.append((2,5))
             Player.check_corners_after_shrink(self,o_pieces,e_pieces,board)
 
     #checks if any new captures occur at te corners after the gameboard shrinks
@@ -213,7 +213,7 @@ class Player(object):
     #EXPAND FOR OTHER SCNARIOS OF GAME ENDING
     def check_game_end(o_pieces,e_pieces):
         #check if either piece array is empty 
-        if len(o_pieces) == 0 or len(e_pieces) == 0:
+        if len(o_pieces) < 2 or len(e_pieces) < 2:
             return True
         else: 
             return False
