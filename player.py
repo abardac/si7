@@ -390,6 +390,8 @@ class Player(object):
         #depth limit has been reached or game has ended will cause state to be evaluated 
         if curr_depth >= self.p_depth or Player.check_game_end(o_pieces,e_pieces):
             score = Player.evaluate(self.total_moves,curr_depth,board,player,o_pieces,e_pieces)
+            print(score)
+            Player.print_gameboard(board)
             return score
         
         #ensures board is right size before finding all possible moves
@@ -402,6 +404,7 @@ class Player(object):
         poss_moves = Player.legal_moves(o_pieces,e_pieces,board)
 
         if player == self.curr_turn:
+            #function for maximising player
             for move in poss_moves:
                 #must make copies of all resources before evaluating and furthering search
                 board_copy = copy.deepcopy(board)
@@ -411,23 +414,32 @@ class Player(object):
                 #makes move in copied resources 
                 Player.complete_move(self,move,self.curr_turn,o_p_copy,e_p_copy,board_copy)
 
+                #swaps player for next depth of search
                 if player == 'black':
                     player = 'white'
                 else:
                     player = 'black'
 
+                #gets max score from next layer down (as its maximising player)
                 score = Player.alpha_beta(self,alpha,beta,player,board_copy,o_p_copy,e_p_copy,curr_depth+1)
 
+                #a better (higher) score for the maximising player has been found
                 if score > alpha:
+                    #if the function is back to the top layer and the score is better 
+                    #than alpha then it means the best move has been found
                     if curr_depth == 0:
                         self.best_move = move
                     alpha = score
 
+                #prunes the rest of poss_moves if score returned is greater than beta
+                #because even if score would increase (since it is maximising player),
+                #beta will never get smaller and theres no point checking the rest
                 if score >= beta:
                     return alpha
 
             return alpha
         else:
+            #the function for the minimising player
             for move in poss_moves:
                 board_copy = copy.deepcopy(board)
                 o_p_copy = copy.deepcopy(o_pieces)
@@ -435,17 +447,23 @@ class Player(object):
 
                 Player.complete_move(self,move,player,o_p_copy,e_p_copy,board_copy)
                 
-
                 if player == 'black':
                     player = 'white'
                 else:
                     player = 'black'
 
+                #gets min score from next layer down (as its minimising player)
                 score = Player.alpha_beta(self,alpha,beta,player,board_copy,e_p_copy,o_p_copy,curr_depth+1)
 
+                #a better (lower) score has been found for the minimising player
                 if score < beta:
                     beta = score
 
+                #prunes the rest of poss_moves if alpha is greater than beta
+                #because even if the minimising player gets a better (lower) score, it 
+                #will never be higher than alpha and so is not important for the
+                #topmost maximising player, and so min player will return its best (min) score
+                #which is its beta value
                 if alpha >= beta:
                     return beta
 
@@ -496,7 +514,7 @@ class Player(object):
     def __init__(self, colour):
         self.best_move = None
         #depth of alpha beta
-        self.p_depth = 2
+        self.p_depth = 3
         self.total_moves = 0
         #tracks who's turn it is
         self.curr_turn = 'white'
@@ -507,8 +525,8 @@ class Player(object):
         self.gameboard = Player.init_gameboard(self)
 
     #used for testing to see the current state of our gameboard in a formatted way
-    def print_gameboard(self):
-        for row in self.gameboard:
+    def print_gameboard(board):
+        for row in board:
             print(row)
 
     def action(self,turns):
