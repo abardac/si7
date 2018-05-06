@@ -390,8 +390,8 @@ class Player(object):
         #depth limit has been reached or game has ended will cause state to be evaluated 
         if curr_depth >= self.p_depth or Player.check_game_end(o_pieces,e_pieces):
             score = Player.evaluate(self.total_moves,curr_depth,board,player,o_pieces,e_pieces)
-            print(score)
-            Player.print_gameboard(board)
+            #print(score)
+            #Player.print_gameboard(board)
             return score
         
         #ensures board is right size before finding all possible moves
