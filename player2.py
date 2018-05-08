@@ -207,6 +207,15 @@ class Player(object):
             if Player.can_jump(piece[0],piece[1]-2,piece[0],piece[1]-1,o_pieces,e_pieces,board): moves.append((piece,(piece[0],piece[1]-2)))
 
         return moves
+
+    def legal_placements(o_pieces,e_pieces,board):
+        placements = []
+        for i in range(8):
+            for j in range(8):
+                if board[i][j] == '-':
+                    placements.append((i,j))
+
+        return placements
     
     #checks whether the game has ended (no more pieces of a colour)
     #used for alpha beta so copies of resources passed in too
@@ -366,13 +375,14 @@ class Player(object):
         else: 
             return 100/(move_diff*piece_diff)
 
-    def chk_shrink_edan(self,total_num_moves,o_pieces,e_pieces,corners,board):
+    def chk_shrink_edan(self,total_num_moves,o_pieces,e_pieces,board):
         edan_pieces = 0
         #endangered pieces in current player gameboard state, not from alpha beta
         curr_edan_pieces = 0
         risk = 0
 
         if total_num_moves > 128 and total_num_moves < 152:
+            corners = [(1,1),(1,6),(6,1),(6,6)]
             move_diff = 152 - total_num_moves
             for piece in o_pieces:
                 if piece[0] == 0 or piece[1] == 0 or piece[0] == 7 or piece[1] == 7 or piece in corners:
@@ -382,10 +392,8 @@ class Player(object):
                     curr_edan_pieces += 1
             panic_weight = Player.get_panic_weight(move_diff,len(o_pieces)-len(e_pieces))
             risk = panic_weight*(curr_edan_pieces-edan_pieces)
-            #if risk > 20:
-                #print("panic: ",panic_weight, "move diff: ",move_diff,"piece diff: ",len(o_pieces)-len(e_pieces))
-                #print("risk: ",risk,"curr_edan: ",curr_edan_pieces,"edan: ",edan_pieces)
         else:
+            corners = [(2,2),(2,5),(5,2),(5,5)]
             move_diff = 216 - total_num_moves
             for piece in o_pieces:
                 if piece[0] == 1 or piece[1] == 1 or piece[0] == 6 or piece[1] == 6 or piece in corners:
@@ -394,16 +402,13 @@ class Player(object):
                 if piece[0] == 1 or piece[1] == 1 or piece[0] == 6 or piece[1] == 6 or piece in corners:
                     curr_edan_pieces += 1
             panic_weight = Player.get_panic_weight(move_diff,len(o_pieces)-len(e_pieces))
-            risk = panic_weight*(curr_edan_pieces-edan_pieces)
-
-        
-        #Player.print_gameboard(board)
+            risk = 2*panic_weight*(curr_edan_pieces-edan_pieces)
 
         return risk
 
     # Returns the score of a given board state based on placement features.
-    def eval_placement(o_pieces, e_pieces, board):
-        num_diff_pieces = Player.num_diff_pieces(o_pieces, e_pieces)
+    def eval_placement(self,o_pieces, e_pieces, board):
+        num_diff_pieces = Player.num_diff_pieces(self,o_pieces, e_pieces)
         edan_o_pieces = Player.chk_edan_placement(o_pieces, 'B', board)
         edan_e_pieces = Player.chk_edan_placement(e_pieces, 'W', board)
 
@@ -416,7 +421,7 @@ class Player(object):
         edan_e_pieces = Player.chk_edan_movement(e_pieces, 'W', board)
         shrink_eval = 0
         if (total_num_moves > 128 and total_num_moves < 152) or (total_num_moves > 192 and total_num_moves < 216):
-            shrink_eval = Player.chk_shrink_edan(self,total_num_moves,o_pieces,e_pieces,corners,board)
+            shrink_eval = Player.chk_shrink_edan(self,total_num_moves,o_pieces,e_pieces,board)
 
         return 50*num_diff_pieces - edan_o_pieces + edan_e_pieces + shrink_eval
 
@@ -425,7 +430,7 @@ class Player(object):
 
         # Placement stage.
         if total_num_moves < 24:
-            return Player.eval_placement(o_pieces, e_pieces, board)
+            return Player.eval_placement(self,o_pieces, e_pieces, board)
 
         # Movement stage.
         else:
@@ -437,7 +442,10 @@ class Player(object):
 
         corners_copy = corners
 
-        poss_moves = Player.legal_moves(o_pieces,e_pieces,board)
+        if self.total_moves >= 24:
+            poss_moves = Player.legal_moves(o_pieces,e_pieces,board)
+        else:
+            poss_moves = Player.legal_placements(o_pieces,e_pieces,board)
         
         for move in poss_moves:
             #must make copies of all resources before evaluating and furthering search
@@ -446,13 +454,19 @@ class Player(object):
             e_p_copy = copy.deepcopy(e_pieces)
 
             #makes move in copied resources 
-            Player.complete_move(move,self.curr_turn,o_p_copy,e_p_copy,corners_copy,board_copy)
+            if self.total_moves >= 24:
+                Player.complete_move(move,self.curr_turn,o_p_copy,e_p_copy,corners_copy,board_copy)
+            else:
+                Player.complete_place(move,self.curr_turn,o_p_copy,e_p_copy,corners_copy,board_copy)
 
             value = Player.min_value(self,best_val,beta,board_copy,o_p_copy,e_p_copy,corners_copy,0)
 
             if value > best_val:
                 best_val = value
-                self.best_move = move
+                if self.total_moves >= 24:
+                    self.best_move = move
+                else:
+                    self.best_placement = move
 
     def max_value(self,alpha, beta, board, o_pieces, e_pieces, corners, curr_depth):
         #depth limit has been reached or game has ended will cause state to be evaluated 
@@ -472,7 +486,10 @@ class Player(object):
 
         value = -10000
         #gets all possible moves capable by the specific player
-        poss_moves = Player.legal_moves(o_pieces,e_pieces,board)
+        if self.total_moves >= 24:
+            poss_moves = Player.legal_moves(o_pieces,e_pieces,board)
+        else:
+            poss_moves = Player.legal_placements(o_pieces,e_pieces,board)
 
         for move in poss_moves:
             #must make copies of all resources before evaluating and furthering search
@@ -481,7 +498,10 @@ class Player(object):
             e_p_copy = copy.deepcopy(e_pieces)
 
             #makes move in copied resources 
-            Player.complete_move(move,self.curr_turn,o_p_copy,e_p_copy,corners_copy,board_copy)
+            if self.total_moves >= 24:
+                Player.complete_move(move,self.curr_turn,o_p_copy,e_p_copy,corners_copy,board_copy)
+            else:
+                Player.complete_place(move,self.curr_turn,o_p_copy,e_p_copy,corners_copy,board_copy)
 
             value = max(value, Player.min_value(self,alpha,beta,board_copy,o_p_copy,e_p_copy,corners_copy,curr_depth+1))
 
@@ -510,7 +530,10 @@ class Player(object):
 
         value = 10000
         #gets all possible moves capable by the specific player
-        poss_moves = Player.legal_moves(o_pieces,e_pieces,board)
+        if self.total_moves >= 24:
+            poss_moves = Player.legal_moves(o_pieces,e_pieces,board)
+        else:
+            poss_moves = Player.legal_placements(o_pieces,e_pieces,board)
 
         for move in poss_moves:
             board_copy = copy.deepcopy(board)
@@ -518,7 +541,10 @@ class Player(object):
             e_p_copy = copy.deepcopy(e_pieces)
 
             #makes move in copied resources 
-            Player.complete_move(move,self.curr_turn,o_p_copy,e_p_copy,corners_copy,board_copy)
+            if self.total_moves >= 24:
+                Player.complete_move(move,self.curr_turn,o_p_copy,e_p_copy,corners_copy,board_copy)
+            else:
+                Player.complete_place(move,self.curr_turn,o_p_copy,e_p_copy,corners_copy,board_copy)
 
             value = min(value, Player.max_value(self,alpha,beta,board_copy,o_p_copy,e_p_copy,corners_copy,curr_depth+1))
             if value <= alpha:
@@ -571,6 +597,7 @@ class Player(object):
 
     def __init__(self, colour):
         self.best_move = None
+        self.best_placement = None
         #depth of alpha beta
         self.p_depth = 2
         self.total_moves = 0
@@ -596,8 +623,10 @@ class Player(object):
             Player.shrink_gameboard("small",self.enemy_pieces,self.our_pieces,self.corners,self.gameboard)
 
         if self.total_moves < 24:
-            rand_place = Player.random_place(self)
-            Player.complete_place(rand_place,self.curr_turn,self.our_pieces,self.enemy_pieces,self.corners,self.gameboard)
+            #rand_place = Player.random_place(self)
+            #Player.complete_place(rand_place,self.curr_turn,self.our_pieces,self.enemy_pieces,self.corners,self.gameboard)
+            Player.alpha_beta(self,self.our_pieces,self.enemy_pieces,self.corners,self.gameboard)
+            Player.complete_place(self.best_placement,self.curr_turn,self.our_pieces,self.enemy_pieces,self.corners,self.gameboard)
             
             if self.curr_turn == 'black':
                 self.curr_turn = 'white'
@@ -606,7 +635,8 @@ class Player(object):
 
             self.total_moves += 1
 
-            return Player.reverse_move(rand_place)
+            #return Player.reverse_move(rand_place)
+            return Player.reverse_move(self.best_placement)
         else:
             Player.alpha_beta(self,self.our_pieces,self.enemy_pieces,self.corners,self.gameboard)
 
