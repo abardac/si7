@@ -412,31 +412,57 @@ class Player(object):
 
         return risk
 
-    def chk_fortress(o_pieces):
+    def maintain_fort(self,o_pieces,e_pieces,board):
+        total = 0
+        if self.curr_turn == 'white':
+            ideal_fort1 = [(4,3),(4,4),(3,3),(3,4)]
+            ideal_fort2 = [(3,3),(3,4),(2,3),(2,4)]
+            ideal_fort3 = [(1,3),(1,4),(2,3),(2,4)]
+        else:
+            ideal_fort1 = [(4,3),(4,4),(3,3),(3,4)]
+            ideal_fort2 = [(4,3),(4,4),(5,3),(5,4)]
+            ideal_fort3 = [(5,3),(5,4),(6,3),(6,4)]
+
+        if (all(x in o_pieces for x in ideal_fort1)):
+            total += 3
+        if (all(x in o_pieces for x in ideal_fort2)):
+            total += 2
+        if (all(x in o_pieces for x in ideal_fort3)):
+            total += 1
+
+        return total
+
+    def ideal_placement(self,o_pieces,e_pieces,board):
+        total = 0
+        if self.curr_turn == 'white':
+            ideal_places = [(4,3),(4,4),(3,3),(3,4),(2,3),(2,4),(1,4),(1,3)]
+        else:
+            ideal_places = [(4,3),(4,4),(6,3),(6,4),(5,3),(5,4),(3,3),(3,4)]
         for p in o_pieces:
-            if (p[0],p[1]+1) in o_pieces and (p[0]+1,p[1]+1) in o_pieces and (p[0]+1,p[1]) in o_pieces:
-                return 1
-        return 0
+            if p in ideal_places:
+                total += 1
+        return total
 
     # Returns the score of a given board state based on placement features.
     def eval_placement(self,o_pieces, e_pieces, board):
+        ideal_place = Player.ideal_placement(self,o_pieces,e_pieces,board)
         num_diff_pieces = Player.num_diff_pieces(self,o_pieces, e_pieces)
         edan_o_pieces = Player.chk_edan_placement(o_pieces, 'B', board)
         edan_e_pieces = Player.chk_edan_placement(e_pieces, 'W', board)
-        fortress = Player.chk_fortress(o_pieces)
 
-        return 2*num_diff_pieces - edan_o_pieces + edan_e_pieces + 200*fortress
+        return 2*num_diff_pieces - edan_o_pieces + edan_e_pieces + 100*ideal_place
 
     # Returns the score of a given board state based on movement features.
     def eval_movement(self,total_num_moves,o_pieces,e_pieces,corners,board):
         num_diff_pieces = Player.num_diff_pieces(self,o_pieces, e_pieces)
         edan_o_pieces = Player.chk_edan_movement(o_pieces, 'B', board)
         edan_e_pieces = Player.chk_edan_movement(e_pieces, 'W', board)
+        fortress = Player.maintain_fort(self,o_pieces,e_pieces,board)
         shrink_eval = 0
         if (total_num_moves > 128 and total_num_moves < 152) or (total_num_moves > 192 and total_num_moves < 216):
             shrink_eval = Player.chk_shrink_edan(self,total_num_moves,o_pieces,e_pieces,board)
 
-        return 50*num_diff_pieces - edan_o_pieces + edan_e_pieces + shrink_eval
+        return 50*num_diff_pieces - edan_o_pieces + edan_e_pieces + shrink_eval + 100*fortress
 
     #COMPLETE EVALUATION FUNCTION FOR ALPHA BETA
     def evaluate(self,total_num_moves,curr_depth,board,o_pieces,e_pieces,corners):
