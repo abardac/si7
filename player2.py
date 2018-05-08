@@ -208,9 +208,15 @@ class Player(object):
 
         return moves
 
-    def legal_placements(o_pieces,e_pieces,board):
+    def legal_placements(self,o_pieces,e_pieces,board):
+        if(self.curr_turn == 'white'):
+            fir_lim = 0
+            sec_lim = 5
+        else:
+            fir_lim = 2
+            sec_lim = 7
         placements = []
-        for i in range(8):
+        for i in range(fir_lim,sec_lim):
             for j in range(8):
                 if board[i][j] == '-':
                     placements.append((i,j))
@@ -406,13 +412,20 @@ class Player(object):
 
         return risk
 
+    def chk_fortress(o_pieces):
+        for p in o_pieces:
+            if (p[0],p[1]+1) in o_pieces and (p[0]+1,p[1]+1) in o_pieces and (p[0]+1,p[1]) in o_pieces:
+                return 1
+        return 0
+
     # Returns the score of a given board state based on placement features.
     def eval_placement(self,o_pieces, e_pieces, board):
         num_diff_pieces = Player.num_diff_pieces(self,o_pieces, e_pieces)
         edan_o_pieces = Player.chk_edan_placement(o_pieces, 'B', board)
         edan_e_pieces = Player.chk_edan_placement(e_pieces, 'W', board)
+        fortress = Player.chk_fortress(o_pieces)
 
-        return 2*num_diff_pieces - edan_o_pieces + edan_e_pieces
+        return 2*num_diff_pieces - edan_o_pieces + edan_e_pieces + 200*fortress
 
     # Returns the score of a given board state based on movement features.
     def eval_movement(self,total_num_moves,o_pieces,e_pieces,corners,board):
@@ -445,7 +458,7 @@ class Player(object):
         if self.total_moves >= 24:
             poss_moves = Player.legal_moves(o_pieces,e_pieces,board)
         else:
-            poss_moves = Player.legal_placements(o_pieces,e_pieces,board)
+            poss_moves = Player.legal_placements(self,o_pieces,e_pieces,board)
         
         for move in poss_moves:
             #must make copies of all resources before evaluating and furthering search
@@ -489,7 +502,7 @@ class Player(object):
         if self.total_moves >= 24:
             poss_moves = Player.legal_moves(o_pieces,e_pieces,board)
         else:
-            poss_moves = Player.legal_placements(o_pieces,e_pieces,board)
+            poss_moves = Player.legal_placements(self,o_pieces,e_pieces,board)
 
         for move in poss_moves:
             #must make copies of all resources before evaluating and furthering search
@@ -533,7 +546,7 @@ class Player(object):
         if self.total_moves >= 24:
             poss_moves = Player.legal_moves(o_pieces,e_pieces,board)
         else:
-            poss_moves = Player.legal_placements(o_pieces,e_pieces,board)
+            poss_moves = Player.legal_placements(self,o_pieces,e_pieces,board)
 
         for move in poss_moves:
             board_copy = copy.deepcopy(board)
