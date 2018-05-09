@@ -434,13 +434,43 @@ class Player(object):
 
     def ideal_placement(self,o_pieces,e_pieces,board):
         total = 0
+        
         if self.curr_turn == 'white':
-            ideal_places = [(4,3),(4,4),(3,3),(3,4),(2,3),(2,4),(1,4),(1,3)]
+            weighted_board = [
+            [0,0,0,0,0,0,0,0]
+            ,[0,0,0,1,1,0,0,0]
+            ,[0,0,1,1,1,1,0,0]
+            ,[0,0,1,2,3,1,0,0]
+            ,[0,0,0,3,3,0,0,0]
+            ,[0,0,0,0,0,0,0,0]
+            ,[0,0,0,0,0,0,0,0]
+            ,[0,0,0,0,0,0,0,0]]
         else:
-            ideal_places = [(4,3),(4,4),(6,3),(6,4),(5,3),(5,4),(3,3),(3,4)]
+            weighted_board = [
+            [0,0,0,0,0,0,0,0]
+            ,[0,0,0,0,0,0,0,0]
+            ,[3,7,7,7,7,7,7,3]
+            ,[4,8,20,40,40,20,8,4]
+            ,[5,9,20,35,35,20,9,5]
+            ,[6,10,15,30,30,15,10,6]
+            ,[1,11,12,25,25,12,11,1]
+            ,[0,1,9,8,8,9,1,0]]
         for p in o_pieces:
-            if p in ideal_places:
+            total += weighted_board[p[0]][p[1]]
+        """
+        if self.curr_turn == 'white':
+            ideal_places1 = [(4,3),(4,4),(3,3),(3,4),(2,3),(2,4),(1,4),(1,3)]
+            ideal_places2 = [(4,2),(4,5),(3,2),(3,5),(2,2),(2,5)]
+        else:
+            ideal_places1 = [(4,3),(4,4),(6,3),(6,4),(5,3),(5,4),(3,3),(3,4)]
+            ideal_places2 = [(4,2),(4,5),(3,2),(3,5),(2,2),(2,5)]
+        for p in o_pieces:
+            if p in ideal_places1:
+                total += 2
+            if p in ideal_places2:
                 total += 1
+        """
+        
         return total
 
     # Returns the score of a given board state based on placement features.
@@ -450,7 +480,7 @@ class Player(object):
         edan_e_pieces = Player.chk_edan_placement(e_pieces, 'W', board)
         ideal_place = Player.ideal_placement(self,o_pieces,e_pieces,board)
 
-        return 2*num_diff_pieces - edan_o_pieces + edan_e_pieces + 100*ideal_place
+        return 50*num_diff_pieces - edan_o_pieces + edan_e_pieces + 49*ideal_place
 
     # Returns the score of a given board state based on movement features.
     def eval_movement(self,total_num_moves,o_pieces,e_pieces,corners,board):
@@ -464,7 +494,7 @@ class Player(object):
         if (total_num_moves > 128 and total_num_moves < 152) or (total_num_moves > 192 and total_num_moves < 216):
             shrink_eval = Player.chk_shrink_edan(self,total_num_moves,o_pieces,e_pieces,board)
 
-        return 50*num_diff_pieces - edan_o_pieces + edan_e_pieces + shrink_eval + 100*fortress
+        return 50*num_diff_pieces - edan_o_pieces + edan_e_pieces + shrink_eval + 49*fortress
 
     #COMPLETE EVALUATION FUNCTION FOR ALPHA BETA
     def evaluate(self,total_num_moves,curr_depth,board,o_pieces,e_pieces,corners):
@@ -719,3 +749,13 @@ class Player(object):
         else:
             self.curr_turn = 'black'
         self.total_moves += 1
+
+class State:
+
+    def __init(self):
+        self.o_pieces = []
+        self.e_pieces = []
+        self.corners = []
+        self.board = Player.init_gameboard(self)
+        self.depth = 0
+        self.prev_states = []
