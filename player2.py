@@ -454,11 +454,13 @@ class Player(object):
 
     # Returns the score of a given board state based on movement features.
     def eval_movement(self,total_num_moves,o_pieces,e_pieces,corners,board):
+
+        shrink_eval = 0
         num_diff_pieces = Player.num_diff_pieces(self,o_pieces, e_pieces)
         edan_o_pieces = Player.chk_edan_movement(o_pieces, 'B', board)
         edan_e_pieces = Player.chk_edan_movement(e_pieces, 'W', board)
         fortress = Player.maintain_fort(self,o_pieces,e_pieces,board)
-        shrink_eval = 0
+        
         if (total_num_moves > 128 and total_num_moves < 152) or (total_num_moves > 192 and total_num_moves < 216):
             shrink_eval = Player.chk_shrink_edan(self,total_num_moves,o_pieces,e_pieces,board)
 
