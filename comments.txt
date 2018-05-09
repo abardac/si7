@@ -1,0 +1,20 @@
+A Programmer's Tale: Part B Analysis (By Andrew and Pierre)
+
+Minimax Analysis
+
+Alpha Beta Analysis
+
+Evaluation Function Analysis:
+	Our AI player calculates the score of each gameboard state using the following features (depending on which stage of the game it is):
+		1) (Both Stages) Difference in the number of our pieces vs opponent's pieces:
+			- Used to determine whether we have a piece advantage or not.
+		2) (Both Stages) Number of our pieces that are endangered:
+			- Used to determine how many of our pieces can be captured by the opponent next round.
+			- Note: The score for this feature is calculated differently for the placement and movement stages, given what the player can do in each stage. See player.py for how each is differently calculated.
+		3) (Both Stages) Number of opponent's pieces that are endangered:
+			- Calculated using the same process as the 2nd feature, replacing the list of our AI player's pieces with that of the opponent.
+		4) (Placement Only) Number of ideal positions that our pieces hold:
+			- Used to give weights to particular positions on the gameboard.
+			- Helps setup our "fortress strategy" in the movement stage (explained down below).
+			- Note: Changes some of the ideal positions to hold based on what kind of player our player is (aka white or black).
+		5) 

@@ -343,7 +343,7 @@ class Player(object):
     Feature 1:
         Returns the difference in pieces between the opponent and you.
     '''
-    def num_diff_pieces(self,o_pieces, e_pieces):
+    def num_diff_pieces(self,o_pieces,e_pieces):
 
         return (len(self.enemy_pieces)-len(e_pieces)) - (len(self.our_pieces)-len(o_pieces))
 
@@ -445,10 +445,10 @@ class Player(object):
 
     # Returns the score of a given board state based on placement features.
     def eval_placement(self,o_pieces, e_pieces, board):
-        ideal_place = Player.ideal_placement(self,o_pieces,e_pieces,board)
         num_diff_pieces = Player.num_diff_pieces(self,o_pieces, e_pieces)
         edan_o_pieces = Player.chk_edan_placement(o_pieces, 'B', board)
         edan_e_pieces = Player.chk_edan_placement(e_pieces, 'W', board)
+        ideal_place = Player.ideal_placement(self,o_pieces,e_pieces,board)
 
         return 2*num_diff_pieces - edan_o_pieces + edan_e_pieces + 100*ideal_place
 
