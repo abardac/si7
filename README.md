@@ -5,4 +5,5 @@
 ## Files Included:
   - player.py       - Contains our final AI player and all its functionality thus far.
   - player_rand.py  - Contains an AI opponent player that will be tested against our final AI player.
-  - referee.py      - Contains the referee and program to start a new game with two players and adds the option for memory and space restrictions (given to us to test our AI player).
+  - referee.py      - Contains the referee and program to start a new game with two players (given to us to test our AI player).
+    -  Adds the option for memory and space restrictions to evaluate the efficiency of our AI player.
