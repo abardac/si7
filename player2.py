@@ -471,7 +471,7 @@ class Player(object):
             weighted_board = [
             [0,0,0,0,0,0,0,0]
             ,[0,0,0,1,1,0,0,0]
-            ,[0,0,1,1,1,1,0,0]
+            ,[0,0,1,2,2,1,0,0]
             ,[0,0,1,3,3,1,0,0]
             ,[0,0,0,3,3,0,0,0]
             ,[0,0,0,0,0,0,0,0]
@@ -490,42 +490,43 @@ class Player(object):
 
         for p in state.o_pieces:
             total += weighted_board[p[0]][p[1]]
-        """
-        if self.curr_turn == 'white':
-            ideal_places1 = [(4,3),(4,4),(3,3),(3,4),(2,3),(2,4),(1,4),(1,3)]
-            ideal_places2 = [(4,2),(4,5),(3,2),(3,5),(2,2),(2,5)]
-        else:
-            ideal_places1 = [(4,3),(4,4),(6,3),(6,4),(5,3),(5,4),(3,3),(3,4)]
-            ideal_places2 = [(4,2),(4,5),(3,2),(3,5),(2,2),(2,5)]
-        for p in o_pieces:
-            if p in ideal_places1:
-                total += 2
-            if p in ideal_places2:
-                total += 1
-        """
         
         return total
 
     # Returns the score of a given board state based on placement features.
     def eval_placement(self,state):
-        ideal_place = Player.ideal_placement(self,state)
-        num_diff_pieces = Player.num_diff_pieces(self,state)
-        edan_o_pieces = Player.chk_edan_placement(state.o_pieces, 'B', state.board)
-        edan_e_pieces = Player.chk_edan_placement(state.e_pieces, 'W', state.board)
+        total = 0
 
-        return 50*num_diff_pieces - edan_o_pieces + edan_e_pieces + 49*ideal_place
+        while state is not None:
+            ideal_place = Player.ideal_placement(self,state)
+            num_diff_pieces = Player.num_diff_pieces(self,state)
+            edan_o_pieces = Player.chk_edan_placement(state.o_pieces, 'B', state.board)
+            edan_e_pieces = Player.chk_edan_placement(state.e_pieces, 'W', state.board)
+
+            total += (3-state.depth)*(50*num_diff_pieces - edan_o_pieces + edan_e_pieces + 30*ideal_place)
+
+            state = state.prev_state
+
+        return total
 
     # Returns the score of a given board state based on movement features.
     def eval_movement(self,total_num_moves,state):
-        num_diff_pieces = Player.num_diff_pieces(self,state)
-        edan_o_pieces = Player.chk_edan_movement(state.o_pieces, 'B', state.board)
-        edan_e_pieces = Player.chk_edan_movement(state.e_pieces, 'W', state.board)
-        fortress = Player.maintain_fort(self,state)
-        shrink_eval = 0
-        if (total_num_moves > 128 and total_num_moves < 152) or (total_num_moves > 192 and total_num_moves < 216):
-            shrink_eval = Player.chk_shrink_edan(self,total_num_moves,state)
+        total = 0
 
-        return 50*num_diff_pieces - edan_o_pieces + edan_e_pieces + shrink_eval + 49*fortress
+        while state is not None:
+            num_diff_pieces = Player.num_diff_pieces(self,state)
+            edan_o_pieces = Player.chk_edan_movement(state.o_pieces, 'B', state.board)
+            edan_e_pieces = Player.chk_edan_movement(state.e_pieces, 'W', state.board)
+            fortress = Player.maintain_fort(self,state)
+            shrink_eval = 0
+            if (total_num_moves > 128 and total_num_moves < 152) or (total_num_moves > 192 and total_num_moves < 216):
+                shrink_eval = Player.chk_shrink_edan(self,total_num_moves,state)
+
+            total += (3-state.depth)*(50*num_diff_pieces - edan_o_pieces + edan_e_pieces + shrink_eval + 30*fortress)
+
+            state = state.prev_state
+        
+        return total
 
     #COMPLETE EVALUATION FUNCTION FOR ALPHA BETA
     def evaluate(self,total_num_moves,curr_depth,state):
@@ -611,7 +612,8 @@ class Player(object):
 
             state_copy = State(colour_copy,o_p_copy,e_p_copy,corners_copy,board_copy,0)
 
-            state_copy.depth = curr_depth
+            state_copy.depth = curr_depth+1
+            state_copy.prev_state = state
 
             #makes move in copied resources 
             if self.total_moves >= 24:
@@ -661,7 +663,8 @@ class Player(object):
 
             state_copy = State(colour_copy,o_p_copy,e_p_copy,corners_copy,board_copy,0)
 
-            state_copy.depth = curr_depth
+            state_copy.depth = curr_depth+1
+            state_copy.prev_state = state
 
             #makes move in copied resources 
             if self.total_moves >= 24:
@@ -772,7 +775,6 @@ class Player(object):
             #return Player.reverse_move(rand_place)
             return Player.reverse_move(self.best_placement)
         else:
-            print(self.colour)
             Player.alpha_beta(self,self.curr_state)
 
             # Added here.
@@ -828,3 +830,5 @@ class State:
         self.corners = corners
         self.board = board
         self.depth = depth
+        self.prev_state = None
+
