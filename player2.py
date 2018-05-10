@@ -472,7 +472,7 @@ class Player(object):
             [0,0,0,0,0,0,0,0]
             ,[0,0,0,1,1,0,0,0]
             ,[0,0,1,1,1,1,0,0]
-            ,[0,0,1,2,3,1,0,0]
+            ,[0,0,1,3,3,1,0,0]
             ,[0,0,0,3,3,0,0,0]
             ,[0,0,0,0,0,0,0,0]
             ,[0,0,0,0,0,0,0,0]
@@ -547,6 +547,10 @@ class Player(object):
             poss_moves = Player.legal_moves(self,state)
         else:
             poss_moves = Player.legal_placements(state)
+
+        if len(poss_moves) == 0:
+            self.best_move = None
+            return
         
         for move in poss_moves:
             #must make copies of all resources before evaluating and furthering search
@@ -733,7 +737,7 @@ class Player(object):
         #self.corners = []
         self.colour = colour
         #self.gameboard = Player.init_gameboard(self)
-        self.curr_state = State(colour,[],[],[],[],0)
+        self.curr_state = State('white',[],[],[],[],0)
         self.curr_state.board = Player.init_gameboard(self.curr_state)
 
 
@@ -768,6 +772,7 @@ class Player(object):
             #return Player.reverse_move(rand_place)
             return Player.reverse_move(self.best_placement)
         else:
+            print(self.colour)
             Player.alpha_beta(self,self.curr_state)
 
             # Added here.
