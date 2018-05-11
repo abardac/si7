@@ -2,10 +2,18 @@ from random import *
 from copy import deepcopy
 from math import sqrt
 
+'''
+Our final AI player class that includes:
+    Minimax,
+    Alpha beta,
+    Custom Evaluation Function & Features.
+'''
 class Player(object):
 
-    #initialises gameboard with x's in corners
-    #adding corners to corner array
+    '''
+    Initialises gameboard with x's in corners.
+    Adds corners to the corner array for future reference.
+    '''
     def init_gameboard(state):
         gameboard = [
         ['x','-','-','-','-','-','-','x']
@@ -24,8 +32,11 @@ class Player(object):
 
         return gameboard
 
-    #will shrink gameboard to required size after certain number of moves
-    #used for alpha beta so copies of resources are passed in too
+    '''
+    Shrinks the gameboard to the required size after a certain number of moves.
+    Makes sure to eliminate out-of-bound pieces and make any appropriate corner captures.
+    *** Used for alpha beta so copies of resources are passed in too.
+    '''
     def shrink_gameboard(size,state):
         if size == "medium":
             for i in range(8):
@@ -34,7 +45,6 @@ class Player(object):
                         if (i,j) in state.o_pieces: state.o_pieces.remove((i,j))
                         if (i,j) in state.e_pieces: state.e_pieces.remove((i,j))
                         state.board[i][j] = 'O'
-
             state.board[1][1] = 'x'
             state.board[1][6] = 'x'
             state.board[6][1] = 'x'
@@ -47,6 +57,7 @@ class Player(object):
             state.corners.append((1,6))
             #checks for any new captures from corners now that gameboard has shrunk
             Player.check_corners_after_shrink(state)
+            
         elif size == "small": 
             for i in range(1,7):
                 for j in range(1,7):
@@ -68,10 +79,10 @@ class Player(object):
 
             Player.check_corners_after_shrink(state)
 
-    #checks if any new captures occur at te corners after the gameboard shrinks
+    # Checks if any captures occur at the new corners after the gameboard shrinks.
     def check_corners_after_shrink(state):
-        #at each corner will check if there are two adjacent opposite coloured pieces in a row
-        #in a certain direction from that corner
+      
+        # Appropriately checks if there are two adjacent opposite coloured pieces in a row at each corner.
         for c in state.corners:
             if (c[0]+1,c[1]) in state.o_pieces and (c[0]+2,c[1]) in state.e_pieces:
                 Player.capture_piece((c[0]+1,c[1]),state.o_pieces,state.board)
@@ -90,8 +101,8 @@ class Player(object):
             if (c[0],c[1]-1) in state.e_pieces and (c[0],c[1]-2) in state.o_pieces:
                 Player.capture_piece((c[0],c[1]-1),state.e_pieces,state.board)
 
-    #removes piece from board and piece array passed in
-    #used for alpha beta so copies of resources passed in too
+    # Removes the given piece from the board and appropriate player piece array.
+    # ***Used for alpha beta so copies of resources passed in too
     def capture_piece(loc, pieces, board):
         #print(loc)
         #print(pieces)
@@ -377,7 +388,6 @@ class Player(object):
         Returns the difference in pieces between the opponent and you.
     '''
     def num_diff_pieces(self,state):
-
         return (len(self.curr_state.e_pieces)-len(state.e_pieces)) - (len(self.curr_state.o_pieces)-len(state.o_pieces))
 
     '''
