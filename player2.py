@@ -1,10 +1,18 @@
 from random import *
 import copy
 
+'''
+Our final AI player class that includes:
+    Minimax,
+    Alpha beta,
+    Custom Evaluation Function & Features.
+'''
 class Player(object):
 
-    #initialises gameboard with x's in corners
-    #adding corners to corner array
+    '''
+    Initialises gameboard with x's in corners.
+    Adds corners to the corner array for future reference.
+    '''
     def init_gameboard(self):
         gameboard = [
         ['x','-','-','-','-','-','-','x']
@@ -23,50 +31,16 @@ class Player(object):
 
         return gameboard
 
-    #will shrink gameboard to required size after certain number of moves
-    #used for alpha beta so copies of resources are passed in too
-    def shrink_gameboard(size,o_pieces,e_pieces,corners,board):
-        if size == "medium":
-            for i in range(8):
-                for j in range(8):
-                    if i == 0 or i == 7 or j == 0 or j == 7 or (i,j) == (1,1) or (i,j) == (1,6) or (i,j) == (6,1) or (i,j) == (6,6):
-                        if (i,j) in o_pieces: o_pieces.remove((i,j))
-                        if (i,j) in e_pieces: e_pieces.remove((i,j))
-                        board[i][j] = 'O'
-            board[1][1] = 'x'
-            board[1][6] = 'x'
-            board[6][1] = 'x'
-            board[6][6] = 'x'
-            #adds new corners to corner array
-            corners.clear()
-            corners.append((1,1))
-            corners.append((6,1))
-            corners.append((6,6))
-            corners.append((1,6))
-            #checks for any new captures from corners now that gameboard has shrunk
-            Player.check_corners_after_shrink(o_pieces,e_pieces,corners,board)
-        elif size == "small": 
-            for i in range(1,7):
-                for j in range(1,7):
-                    if i == 1 or i == 6 or j == 1 or j == 6 or (i,j) == (2,2) or (i,j) == (2,5) or (i,j) == (5,2) or (i,j) == (5,5):
-                        if (i,j) in o_pieces: o_pieces.remove((i,j))
-                        if (i,j) in e_pieces: e_pieces.remove((i,j))
-                        board[i][j] = 'O'
-            board[2][2] = 'x'
-            board[2][5] = 'x'
-            board[5][2] = 'x'
-            board[5][5] = 'x'
-            corners.clear()
-            corners.append((2,2))
-            corners.append((5,2))
-            corners.append((5,5))
-            corners.append((2,5))
-            Player.check_corners_after_shrink(o_pieces,e_pieces,corners,board)
+    # Removes the given piece from the board and appropriate player piece array.
+    # ***Used for alpha beta so copies of resources passed in too
+    def capture_piece(loc, pieces, board):
+        pieces.remove(loc)
+        board[loc[0]][loc[1]] = '-'
 
-    #checks if any new captures occur at te corners after the gameboard shrinks
+    # Checks if any captures occur at the new corners after the gameboard shrinks.
     def check_corners_after_shrink(o_pieces,e_pieces,corners,board):
-        #at each corner will check if there are two adjacent opposite coloured pieces in a row
-        #in a certain direction from that corner
+
+        # Appropriately checks if there are two adjacent opposite coloured pieces in a row at each corner.
         for corner in corners:
             if (corner[0]+1,corner[1]) in o_pieces and (corner[0]+2,corner[1]) in e_pieces:
                 Player.capture_piece((corner[0]+1,corner[1]),o_pieces,board)
@@ -85,11 +59,51 @@ class Player(object):
             if (corner[0],corner[1]-1) in e_pieces and (corner[0],corner[1]-2) in o_pieces:
                 Player.capture_piece((corner[0],corner[1]-1),e_pieces,board)
 
-    #removes piece from board and piece array passed in
-    #used for alpha beta so copies of resources passed in too
-    def capture_piece(loc, pieces, board):
-        pieces.remove(loc)
-        board[loc[0]][loc[1]] = '-'
+    '''
+    Shrinks the gameboard to the required size after a certain number of moves.
+    Makes sure to eliminate out-of-bound pieces and make any appropriate corner captures.
+    *** Used for alpha beta so copies of resources are passed in too.
+    '''
+    def shrink_gameboard(size,o_pieces,e_pieces,corners,board):
+        if size == "medium":
+            for i in range(8):
+                for j in range(8):
+                    if i == 0 or i == 7 or j == 0 or j == 7 or (i,j) == (1,1) or (i,j) == (1,6) or (i,j) == (6,1) or (i,j) == (6,6):
+                        if (i,j) in o_pieces: o_pieces.remove((i,j))
+                        if (i,j) in e_pieces: e_pieces.remove((i,j))
+                        board[i][j] = 'O'
+            board[1][1] = 'x'
+            board[1][6] = 'x'
+            board[6][1] = 'x'
+            board[6][6] = 'x'
+
+            # Updates new corners in the corner array.
+            corners.clear()
+            corners.append((1,1))
+            corners.append((6,1))
+            corners.append((6,6))
+            corners.append((1,6))
+            Player.check_corners_after_shrink(o_pieces,e_pieces,corners,board)
+
+        elif size == "small": 
+            for i in range(1,7):
+                for j in range(1,7):
+                    if i == 1 or i == 6 or j == 1 or j == 6 or (i,j) == (2,2) or (i,j) == (2,5) or (i,j) == (5,2) or (i,j) == (5,5):
+                        if (i,j) in o_pieces: o_pieces.remove((i,j))
+                        if (i,j) in e_pieces: e_pieces.remove((i,j))
+                        board[i][j] = 'O'
+            board[2][2] = 'x'
+            board[2][5] = 'x'
+            board[5][2] = 'x'
+            board[5][5] = 'x'
+
+            # Updates new corners in the corner array.
+            corners.clear()
+            corners.append((2,2))
+            corners.append((5,2))
+            corners.append((5,5))
+            corners.append((2,5))
+            Player.check_corners_after_shrink(o_pieces,e_pieces,corners,board)
 
     #after an action(placement or movement), must check if any pieces are captured
     #used for alpha beta so copies of resources passed in too

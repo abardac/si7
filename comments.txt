@@ -1,34 +1,35 @@
-A Programmer's Tale: Part B Analysis (By Andrew and Pierre)
+A Programmer's Tale: Part B Analysis (By Andrew and Pierre).
 
-Minimax Analysis
-
-Alpha Beta Analysis
+Main Approach: Standard Minimax & Alpha Beta.
 
 Evaluation Function Analysis:
-  Our AI player calculates the score of each gameboard state using the following features (depending on which stage of the game it is):
+Our AI player calculates the score of each gameboard state using the following features (depending on which stage of the game it currently is):
 
-    1) (Both Stages) Difference in the number of our pieces vs opponent's pieces:
-      - Used to determine whether we have a piece advantage or not.
+  1) (Both Stages) Difference in the number of our pieces vs opponent's pieces:
+    - More specifically, it calculates the change in the number of our pieces and their pieces (based on piece numbers from the original gameboard vs those of the current explored gameboard).
+    - Used to determine whether we have a piece advantage or not.
 
-    2) (Both Stages) Number of our pieces that are endangered:
-      - Used to determine how many of our pieces can be captured by the opponent next round.
-      - Note: The score for this feature is calculated differently for the placement and movement stages, given what the player can do in each stage. See player.py for how each is differently calculated.
+  2) (Both Stages) Number of our pieces that are endangered:
+    - Used to determine how many of our pieces can be captured by the opponent in the next round.
+    - Note: The score for this feature is calculated differently for the placement and movement stages, given what the player can do in each stage.
+      - Check chk_edan_placement and chk_edan_movement in player.py for how each is calculated differently.
 
-    3) (Both Stages) Number of opponent's pieces that are endangered:
-      - Calculated using the same process as the 2nd feature, replacing the list of our AI player's pieces with that of the opponent.
+  3) (Both Stages) Number of opponent's pieces that are endangered:
+    - Calculated using the same process as the 2nd feature above, replacing the list of our AI player's pieces with that of the opponent.
 
-    4) (Placement Only) Number of ideal positions that our pieces hold:
-      - Used to give weights to particular positions on the gameboard.
-      - Helps setup our "fortress strategy" in the movement stage (explained down below).
-      - Note: Changes some of the ideal positions to hold based on whether the player is white or black.
+  4) (Placement Only) Number of ideal positions that our pieces hold:
+    - Used to give weights to particular positions on the gameboard.
+    - Helps setup our "fortress strategy" in the movement stage (explained down below).
+    - Note: Changes some of the ideal positions to hold based on whether the player is white or black.
 
-    5) (Movement Only) Number of our pieces that help form an ideal fort:
-      - We called this feature our "fortress strategy"
-      - Used to help form a 2x2 fort, with three different positions for choosing where to form one based on the state of the gameboard. Each of the three fort positions are weighed differently to prioritise having the best one.
-      - "Explain why we created the fortress strategy and what value it brings"
-      - Note: Changes the positions of each ideal fort according to whether the player is white or black.
+  5) (Movement Only) Number of our pieces that help form an ideal fort:
+    - We called this feature our "fortress strategy"
+    - Used to help form a 2x2 fort, with three different positions for choosing where to form a fort based on the state of the gameboard. Each of the three fort positions are weighed differently to prioritise having the best fort currently possible.
+    - "Explain why we created the fortress strategy and what value it brings"
+    - Note: Changes the positions of each ideal fort according to whether the player is white or black.
 
-    6) (Movement Only) Number of pieces that are endangered by the shrinking of the gameboard:
-      - Checks if the gameboard is close to shrinking.
-      - Checks how many of our pieces are currently, or will be in danger of being eliminated due to shrinking.
-      - Assigns an increasing "panic" weight as the game comes closer to shrinking, so that moves/states that lead endangered pieces to safety are increasingly prioritised.
+  6) (Movement Only) Number of pieces that are endangered by the shrinking of the gameboard:
+    - Checks if the gameboard is close to one of its shrinking phases.
+    - Checks how many of our pieces are currently, or will be, in danger of being eliminated due to shrinking.
+    - Assigns an increasing "panic" weight as the game comes closer to shrinking, so that moves/states that lead endangered pieces to safety are increasingly prioritised.
+      - Note: If we currently have a pieces disadvantage, greater priority is given to get what remaining pieces we have left out of the shrinking area. This is because we can't afford to lose any more pieces with a pieces disadvantage, as opposed to making riskier plays when we have the advantage.
