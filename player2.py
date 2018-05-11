@@ -1,5 +1,6 @@
 from random import *
-import copy
+from copy import deepcopy
+from math import sqrt
 
 '''
 Our final AI player class that includes:
@@ -13,7 +14,7 @@ class Player(object):
     Initialises gameboard with x's in corners.
     Adds corners to the corner array for future reference.
     '''
-    def init_gameboard(self):
+    def init_gameboard(state):
         gameboard = [
         ['x','-','-','-','-','-','-','x']
         ,['-','-','-','-','-','-','-','-']
@@ -24,153 +25,175 @@ class Player(object):
         ,['-','-','-','-','-','-','-','-']
         ,['x','-','-','-','-','-','-','x']]
 
-        self.corners.append((0,0))
-        self.corners.append((0,7))
-        self.corners.append((7,0))
-        self.corners.append((7,7))
+        state.corners.append((0,0))
+        state.corners.append((0,7))
+        state.corners.append((7,0))
+        state.corners.append((7,7))
 
         return gameboard
-
-    # Removes the given piece from the board and appropriate player piece array.
-    # ***Used for alpha beta so copies of resources passed in too
-    def capture_piece(loc, pieces, board):
-        pieces.remove(loc)
-        board[loc[0]][loc[1]] = '-'
-
-    # Checks if any captures occur at the new corners after the gameboard shrinks.
-    def check_corners_after_shrink(o_pieces,e_pieces,corners,board):
-
-        # Appropriately checks if there are two adjacent opposite coloured pieces in a row at each corner.
-        for corner in corners:
-            if (corner[0]+1,corner[1]) in o_pieces and (corner[0]+2,corner[1]) in e_pieces:
-                Player.capture_piece((corner[0]+1,corner[1]),o_pieces,board)
-            if (corner[0]+1,corner[1]) in e_pieces and (corner[0]+2,corner[1]) in o_pieces:
-                Player.capture_piece((corner[0]+1,corner[1]),e_pieces,board)
-            if (corner[0]-1,corner[1]) in o_pieces and (corner[0]-2,corner[1]) in e_pieces:
-                Player.capture_piece((corner[0]-1,corner[1]),o_pieces,board)
-            if (corner[0]-1,corner[1]) in e_pieces and (corner[0]-2,corner[1]) in o_pieces:
-                Player.capture_piece((corner[0]-1,corner[1]),e_pieces,board)
-            if (corner[0],corner[1]+1) in o_pieces and (corner[0],corner[1]+2) in e_pieces:
-                Player.capture_piece((corner[0],corner[1]+1),o_pieces,board)
-            if (corner[0],corner[1]+1) in e_pieces and (corner[0],corner[1]+2) in o_pieces:
-                Player.capture_piece((corner[0],corner[1]+1),e_pieces,board)
-            if (corner[0],corner[1]-1) in o_pieces and (corner[0],corner[1]-2) in e_pieces:
-                Player.capture_piece((corner[0],corner[1]-1),o_pieces,board)
-            if (corner[0],corner[1]-1) in e_pieces and (corner[0],corner[1]-2) in o_pieces:
-                Player.capture_piece((corner[0],corner[1]-1),e_pieces,board)
 
     '''
     Shrinks the gameboard to the required size after a certain number of moves.
     Makes sure to eliminate out-of-bound pieces and make any appropriate corner captures.
     *** Used for alpha beta so copies of resources are passed in too.
     '''
-    def shrink_gameboard(size,o_pieces,e_pieces,corners,board):
+    def shrink_gameboard(size,state):
         if size == "medium":
             for i in range(8):
                 for j in range(8):
                     if i == 0 or i == 7 or j == 0 or j == 7 or (i,j) == (1,1) or (i,j) == (1,6) or (i,j) == (6,1) or (i,j) == (6,6):
-                        if (i,j) in o_pieces: o_pieces.remove((i,j))
-                        if (i,j) in e_pieces: e_pieces.remove((i,j))
-                        board[i][j] = 'O'
-            board[1][1] = 'x'
-            board[1][6] = 'x'
-            board[6][1] = 'x'
-            board[6][6] = 'x'
-
-            # Updates new corners in the corner array.
-            corners.clear()
-            corners.append((1,1))
-            corners.append((6,1))
-            corners.append((6,6))
-            corners.append((1,6))
-            Player.check_corners_after_shrink(o_pieces,e_pieces,corners,board)
-
+                        if (i,j) in state.o_pieces: state.o_pieces.remove((i,j))
+                        if (i,j) in state.e_pieces: state.e_pieces.remove((i,j))
+                        state.board[i][j] = 'O'
+            state.board[1][1] = 'x'
+            state.board[1][6] = 'x'
+            state.board[6][1] = 'x'
+            state.board[6][6] = 'x'
+            #adds new corners to corner array
+            state.corners.clear()
+            state.corners.append((1,1))
+            state.corners.append((6,1))
+            state.corners.append((6,6))
+            state.corners.append((1,6))
+            #checks for any new captures from corners now that gameboard has shrunk
+            Player.check_corners_after_shrink(state)
+            
         elif size == "small": 
             for i in range(1,7):
                 for j in range(1,7):
                     if i == 1 or i == 6 or j == 1 or j == 6 or (i,j) == (2,2) or (i,j) == (2,5) or (i,j) == (5,2) or (i,j) == (5,5):
-                        if (i,j) in o_pieces: o_pieces.remove((i,j))
-                        if (i,j) in e_pieces: e_pieces.remove((i,j))
-                        board[i][j] = 'O'
-            board[2][2] = 'x'
-            board[2][5] = 'x'
-            board[5][2] = 'x'
-            board[5][5] = 'x'
+                        if (i,j) in state.o_pieces: state.o_pieces.remove((i,j))
+                        if (i,j) in state.e_pieces: state.e_pieces.remove((i,j))
+                        state.board[i][j] = 'O'
 
-            # Updates new corners in the corner array.
-            corners.clear()
-            corners.append((2,2))
-            corners.append((5,2))
-            corners.append((5,5))
-            corners.append((2,5))
-            Player.check_corners_after_shrink(o_pieces,e_pieces,corners,board)
+            state.board[2][2] = 'x'
+            state.board[2][5] = 'x'
+            state.board[5][2] = 'x'
+            state.board[5][5] = 'x'
+
+            state.corners.clear()
+            state.corners.append((2,2))
+            state.corners.append((5,2))
+            state.corners.append((5,5))
+            state.corners.append((2,5))
+
+            Player.check_corners_after_shrink(state)
+
+    # Checks if any captures occur at the new corners after the gameboard shrinks.
+    def check_corners_after_shrink(state):
+      
+        # Appropriately checks if there are two adjacent opposite coloured pieces in a row at each corner.
+        for c in state.corners:
+            if (c[0]+1,c[1]) in state.o_pieces and (c[0]+2,c[1]) in state.e_pieces:
+                Player.capture_piece((c[0]+1,c[1]),state.o_pieces,state.board)
+            if (c[0]+1,c[1]) in state.e_pieces and (c[0]+2,c[1]) in state.o_pieces:
+                Player.capture_piece((c[0]+1,c[1]),state.e_pieces,state.board)
+            if (c[0]-1,c[1]) in state.o_pieces and (c[0]-2,c[1]) in state.e_pieces:
+                Player.capture_piece((c[0]-1,c[1]),state.o_pieces,state.board)
+            if (c[0]-1,c[1]) in state.e_pieces and (c[0]-2,c[1]) in state.o_pieces:
+                Player.capture_piece((c[0]-1,c[1]),state.e_pieces,state.board)
+            if (c[0],c[1]+1) in state.o_pieces and (c[0],c[1]+2) in state.e_pieces:
+                Player.capture_piece((c[0],c[1]+1),state.o_pieces,state.board)
+            if (c[0],c[1]+1) in state.e_pieces and (c[0],c[1]+2) in state.o_pieces:
+                Player.capture_piece((c[0],c[1]+1),state.e_pieces,state.board)
+            if (c[0],c[1]-1) in state.o_pieces and (c[0],c[1]-2) in state.e_pieces:
+                Player.capture_piece((c[0],c[1]-1),state.o_pieces,state.board)
+            if (c[0],c[1]-1) in state.e_pieces and (c[0],c[1]-2) in state.o_pieces:
+                Player.capture_piece((c[0],c[1]-1),state.e_pieces,state.board)
+
+    # Removes the given piece from the board and appropriate player piece array.
+    # ***Used for alpha beta so copies of resources passed in too
+    def capture_piece(loc, pieces, board):
+        #print(loc)
+        #print(pieces)
+        #Player.print_gameboard(board)
+        pieces.remove(loc)
+        board[loc[0]][loc[1]] = '-'
 
     #after an action(placement or movement), must check if any pieces are captured
     #used for alpha beta so copies of resources passed in too
-    def check_capture_after_action(action,o_pieces,e_pieces,corners,board):
+    def check_capture_after_action(self,action,state):
+        if state.colour == self.colour:
+            o_pieces = state.o_pieces
+            e_pieces = state.e_pieces
+        else:
+            o_pieces = state.e_pieces
+            e_pieces = state.o_pieces
+
         #checks for adjacent opposite colour pieces and then checks if 
         #same colour is on other side in the same direction 
         if (action[0],action[1]+1) in e_pieces and (action[0],action[1]+2) in o_pieces:
-            Player.capture_piece((action[0],action[1]+1),e_pieces,board)
+            Player.capture_piece((action[0],action[1]+1),e_pieces,state.board)
         if (action[0],action[1]-1) in e_pieces and (action[0],action[1]-2) in o_pieces:
-            Player.capture_piece((action[0],action[1]-1),e_pieces,board)
+            Player.capture_piece((action[0],action[1]-1),e_pieces,state.board)
         if (action[0]+1,action[1]) in e_pieces and (action[0]+2,action[1]) in o_pieces:
-            Player.capture_piece((action[0]+1,action[1]),e_pieces,board)
+            Player.capture_piece((action[0]+1,action[1]),e_pieces,state.board)
         if (action[0]-1,action[1]) in e_pieces and (action[0]-2,action[1]) in o_pieces:
-            Player.capture_piece((action[0]-1,action[1]),e_pieces,board)
+            Player.capture_piece((action[0]-1,action[1]),e_pieces,state.board)
 
         #checks against corners too
-        if (action[0],action[1]+1) in e_pieces and (action[0],action[1]+2) in corners:
-            Player.capture_piece((action[0],action[1]+1),e_pieces,board)
-        if (action[0],action[1]-1) in e_pieces and (action[0],action[1]-2) in corners:
-            Player.capture_piece((action[0],action[1]-1),e_pieces,board)
-        if (action[0]+1,action[1]) in e_pieces and (action[0]+2,action[1]) in corners:
-            Player.capture_piece((action[0]+1,action[1]),e_pieces,board)
-        if (action[0]-1,action[1]) in e_pieces and (action[0]-2,action[1]) in corners:
-            Player.capture_piece((action[0]-1,action[1]),e_pieces,board)
+        if (action[0],action[1]+1) in e_pieces and (action[0],action[1]+2) in state.corners:
+            Player.capture_piece((action[0],action[1]+1),e_pieces,state.board)
+        if (action[0],action[1]-1) in e_pieces and (action[0],action[1]-2) in state.corners:
+            Player.capture_piece((action[0],action[1]-1),e_pieces,state.board)
+        if (action[0]+1,action[1]) in e_pieces and (action[0]+2,action[1]) in state.corners:
+            Player.capture_piece((action[0]+1,action[1]),e_pieces,state.board)
+        if (action[0]-1,action[1]) in e_pieces and (action[0]-2,action[1]) in state.corners:
+            Player.capture_piece((action[0]-1,action[1]),e_pieces,state.board)
 
         #check for stupid move(piece moves to where itself is captured)
         if (action[0]-1,action[1]) in e_pieces and (action[0]+1,action[1]) in e_pieces:
-            Player.capture_piece(action,o_pieces,board)
+            Player.capture_piece(action,o_pieces,state.board)
         elif (action[0],action[1]-1) in e_pieces and (action[0],action[1]+1) in e_pieces:
-            Player.capture_piece(action,o_pieces,board)
-        elif (action[0]-1,action[1]) in e_pieces and (action[0]+1,action[1]) in corners:
-            Player.capture_piece(action,o_pieces,board)
-        elif (action[0]-1,action[1]) in corners and (action[0]+1,action[1]) in e_pieces:
-            Player.capture_piece(action,o_pieces,board)
-        elif (action[0],action[1]-1) in e_pieces and (action[0],action[1]+1) in corners:
-            Player.capture_piece(action,o_pieces,board)
-        elif (action[0],action[1]-1) in corners and (action[0],action[1]+1) in e_pieces:
-            Player.capture_piece(action,o_pieces,board)
+            Player.capture_piece(action,o_pieces,state.board)
+        elif (action[0]-1,action[1]) in e_pieces and (action[0]+1,action[1]) in state.corners:
+            Player.capture_piece(action,o_pieces,state.board)
+        elif (action[0]-1,action[1]) in state.corners and (action[0]+1,action[1]) in e_pieces:
+            Player.capture_piece(action,o_pieces,state.board)
+        elif (action[0],action[1]-1) in e_pieces and (action[0],action[1]+1) in state.corners:
+            Player.capture_piece(action,o_pieces,state.board)
+        elif (action[0],action[1]-1) in state.corners and (action[0],action[1]+1) in e_pieces:
+            Player.capture_piece(action,o_pieces,state.board)
 
     #completes a certain move in the piece array and board passed in
     #used for alpha beta so copies of resources passed in too
-    def complete_move(move,player,o_pieces,e_pieces,corners,board):
-        
-        move_index = o_pieces.index(move[0])
-        o_pieces[move_index] = move[1]
-        board[move[0][0]][move[0][1]] = '-'
-        if player == 'black':
-            board[move[1][0]][move[1][1]] = 'B'
+    def complete_move(self,move,state):
+
+        if state.colour == self.colour:
+            pieces = state.o_pieces
         else:
-            board[move[1][0]][move[1][1]] = 'W'
-       
+            pieces = state.e_pieces
+        
+        move_index = pieces.index(move[0])
+        pieces[move_index] = move[1]
+        state.board[move[0][0]][move[0][1]] = '-'
+
+        if state.colour == 'black':
+            state.board[move[1][0]][move[1][1]] = 'B'
+        else:
+            state.board[move[1][0]][move[1][1]] = 'W'
+
         #checks whether its move caused a capture
-        Player.check_capture_after_action(move[1],o_pieces,e_pieces,corners,board)
+        Player.check_capture_after_action(self,move[1],state)
 
     #completes the placement of a certain piece
     #used for alpha beta so copies of resources passed in too
-    def complete_place(action,player,o_pieces,e_pieces,corners,board):
-        
-        if action not in o_pieces:
-                o_pieces.append(action)
+    def complete_place(self,action,state):
 
-        if player == 'black':
-            board[action[0]][action[1]] = 'B'
+        if state.colour == self.colour:
+            pieces = state.o_pieces
         else:
-            board[action[0]][action[1]] = 'W'
+            pieces = state.e_pieces
+        
+        if action not in pieces:
+            pieces.append(action)
 
-        Player.check_capture_after_action(action,o_pieces,e_pieces,corners,board)
+        if state.colour == 'black':
+            state.board[action[0]][action[1]] = 'B'
+        else:
+            state.board[action[0]][action[1]] = 'W'
+
+        Player.check_capture_after_action(self,action,state)
     
     #checks whether a movement is possible
     #used for alpha beta so copies of resources passed in too
@@ -187,17 +210,17 @@ class Player(object):
 
     #checks whether a jump is possible
     #used for alpha beta so copies of resources passed in too
-    def can_jump(x,y,mid_x,mid_y,o_pieces,e_pieces,board):
+    def can_jump(x,y,mid_x,mid_y,state):
         if x >= 0 and x <= 7 and y >= 0 and y <= 7:
             #only if theres a piece between dest and a piece's current loc
             #will it possibly be allowed to jump
-            if (mid_x,mid_y) in o_pieces:
-                if board[x][y] == '-':
+            if (mid_x,mid_y) in state.o_pieces:
+                if state.board[x][y] == '-':
                     return True
                 else: 
                     return False
-            elif (mid_x,mid_y) in e_pieces:
-                if board[x][y] == '-':
+            elif (mid_x,mid_y) in state.e_pieces:
+                if state.board[x][y] == '-':
                     return True
                 else: 
                     return False
@@ -208,22 +231,30 @@ class Player(object):
 
     #finds all possible legal moves capable by a certain player
     ##used for alpha beta so copies of resources passed in too
-    def legal_moves(o_pieces,e_pieces,board):
-        moves = []
-        for piece in o_pieces:
-            if Player.can_move(piece[0]+1,piece[1],board): moves.append((piece,(piece[0]+1,piece[1])))
-            if Player.can_move(piece[0]-1,piece[1],board): moves.append((piece,(piece[0]-1,piece[1])))
-            if Player.can_move(piece[0],piece[1]+1,board): moves.append((piece,(piece[0],piece[1]+1)))
-            if Player.can_move(piece[0],piece[1]-1,board): moves.append((piece,(piece[0],piece[1]-1)))
-            if Player.can_jump(piece[0]+2,piece[1],piece[0]+1,piece[1],o_pieces,e_pieces,board): moves.append((piece,(piece[0]+2,piece[1])))
-            if Player.can_jump(piece[0]-2,piece[1],piece[0]-1,piece[1],o_pieces,e_pieces,board): moves.append((piece,(piece[0]-2,piece[1])))
-            if Player.can_jump(piece[0],piece[1]+2,piece[0],piece[1]+1,o_pieces,e_pieces,board): moves.append((piece,(piece[0],piece[1]+2)))
-            if Player.can_jump(piece[0],piece[1]-2,piece[0],piece[1]-1,o_pieces,e_pieces,board): moves.append((piece,(piece[0],piece[1]-2)))
+    def legal_moves(self,state):
+        
+        if state.colour == self.colour:
+            pieces = state.o_pieces
+        else:
+            pieces = state.e_pieces
 
+        moves = []
+
+        for p in pieces:
+            if Player.can_move(p[0]+1,p[1],state.board): moves.append((p,(p[0]+1,p[1])))
+            if Player.can_move(p[0]-1,p[1],state.board): moves.append((p,(p[0]-1,p[1])))
+            if Player.can_move(p[0],p[1]+1,state.board): moves.append((p,(p[0],p[1]+1)))
+            if Player.can_move(p[0],p[1]-1,state.board): moves.append((p,(p[0],p[1]-1)))
+            if Player.can_jump(p[0]+2,p[1],p[0]+1,p[1],state): moves.append((p,(p[0]+2,p[1])))
+            if Player.can_jump(p[0]-2,p[1],p[0]-1,p[1],state): moves.append((p,(p[0]-2,p[1])))
+            if Player.can_jump(p[0],p[1]+2,p[0],p[1]+1,state): moves.append((p,(p[0],p[1]+2)))
+            if Player.can_jump(p[0],p[1]-2,p[0],p[1]-1,state): moves.append((p,(p[0],p[1]-2)))
+
+        #print(moves)
         return moves
 
-    def legal_placements(self,o_pieces,e_pieces,board):
-        if(self.curr_turn == 'white'):
+    def legal_placements(state):
+        if(state.colour == 'white'):
             fir_lim = 0
             sec_lim = 5
         else:
@@ -232,17 +263,16 @@ class Player(object):
         placements = []
         for i in range(fir_lim,sec_lim):
             for j in range(8):
-                if board[i][j] == '-':
+                if state.board[i][j] == '-':
                     placements.append((i,j))
 
         return placements
     
     #checks whether the game has ended (no more pieces of a colour)
     #used for alpha beta so copies of resources passed in too
-    #EXPAND FOR OTHER SCNARIOS OF GAME ENDING
-    def check_game_end(o_pieces,e_pieces):
+    def check_game_end(state):
         #check if either piece array is empty 
-        if len(o_pieces) < 2 or len(e_pieces) < 2:
+        if len(state.o_pieces) < 2 or len(state.e_pieces) < 2:
             return True
         else: 
             return False
@@ -357,9 +387,8 @@ class Player(object):
     Feature 1:
         Returns the difference in pieces between the opponent and you.
     '''
-    def num_diff_pieces(self,o_pieces,e_pieces):
-
-        return (len(self.enemy_pieces)-len(e_pieces)) - (len(self.our_pieces)-len(o_pieces))
+    def num_diff_pieces(self,state):
+        return (len(self.curr_state.e_pieces)-len(state.e_pieces)) - (len(self.curr_state.o_pieces)-len(state.o_pieces))
 
     '''
     Feature 2 & 3:
@@ -395,7 +424,7 @@ class Player(object):
         else: 
             return 100/(move_diff*piece_diff)
 
-    def chk_shrink_edan(self,total_num_moves,o_pieces,e_pieces,board):
+    def chk_shrink_edan(self,total_num_moves,state):
         edan_pieces = 0
         #endangered pieces in current player gameboard state, not from alpha beta
         curr_edan_pieces = 0
@@ -404,31 +433,41 @@ class Player(object):
         if total_num_moves > 128 and total_num_moves < 152:
             corners = [(1,1),(1,6),(6,1),(6,6)]
             move_diff = 152 - total_num_moves
-            for piece in o_pieces:
+            for piece in state.o_pieces:
                 if piece[0] == 0 or piece[1] == 0 or piece[0] == 7 or piece[1] == 7 or piece in corners:
                     edan_pieces += 1
-            for piece in self.our_pieces:
+            for piece in self.curr_state.o_pieces:
                 if piece[0] == 0 or piece[1] == 0 or piece[0] == 7 or piece[1] == 7 or piece in corners:
                     curr_edan_pieces += 1
-            panic_weight = Player.get_panic_weight(move_diff,len(o_pieces)-len(e_pieces))
+            panic_weight = Player.get_panic_weight(move_diff,len(state.o_pieces)-len(state.e_pieces))
             risk = panic_weight*(curr_edan_pieces-edan_pieces)
         else:
             corners = [(2,2),(2,5),(5,2),(5,5)]
             move_diff = 216 - total_num_moves
-            for piece in o_pieces:
+            for piece in state.o_pieces:
                 if piece[0] == 1 or piece[1] == 1 or piece[0] == 6 or piece[1] == 6 or piece in corners:
                     edan_pieces += 1
-            for piece in self.our_pieces:
+            for piece in self.curr_state.o_pieces:
                 if piece[0] == 1 or piece[1] == 1 or piece[0] == 6 or piece[1] == 6 or piece in corners:
                     curr_edan_pieces += 1
-            panic_weight = Player.get_panic_weight(move_diff,len(o_pieces)-len(e_pieces))
+            panic_weight = Player.get_panic_weight(move_diff,len(state.o_pieces)-len(state.e_pieces))
             risk = 2*panic_weight*(curr_edan_pieces-edan_pieces)
 
         return risk
 
-    def maintain_fort(self,o_pieces,e_pieces,board):
+    def move_to_centre(self,state):
         total = 0
-        if self.curr_turn == 'white':
+        cen_x = 3.5
+        cen_y = 3.5
+        
+        for p in state.o_pieces:
+            total += sqrt((cen_x-p[0])**2+(cen_y-p[1])**2)
+
+        return total
+
+    def maintain_fort(self,state):
+        total = 0
+        if self.colour == 'white':
             ideal_fort1 = [(4,3),(4,4),(3,3),(3,4)]
             ideal_fort2 = [(3,3),(3,4),(2,3),(2,4)]
             ideal_fort3 = [(1,3),(1,4),(2,3),(2,4)]
@@ -437,114 +476,128 @@ class Player(object):
             ideal_fort2 = [(4,3),(4,4),(5,3),(5,4)]
             ideal_fort3 = [(5,3),(5,4),(6,3),(6,4)]
 
-        if (all(x in o_pieces for x in ideal_fort1)):
+        if (all(x in state.o_pieces for x in ideal_fort1)):
             total += 3
-        if (all(x in o_pieces for x in ideal_fort2)):
+        if (all(x in state.o_pieces for x in ideal_fort2)):
             total += 2
-        if (all(x in o_pieces for x in ideal_fort3)):
+        if (all(x in state.o_pieces for x in ideal_fort3)):
             total += 1
 
         return total
 
-    def ideal_placement(self,o_pieces,e_pieces,board):
+    def ideal_placement(self,state):
         total = 0
         
-        if self.curr_turn == 'white':
+        if self.colour == 'white':
             weighted_board = [
             [0,0,0,0,0,0,0,0]
+            ,[0,0,1,2,2,1,0,0]
+            ,[0,1,3,4,4,3,1,0]
+            ,[0,1,3,5,5,3,1,0]
+            ,[0,0,1,6,6,1,0,0]
             ,[0,0,0,1,1,0,0,0]
-            ,[0,0,1,1,1,1,0,0]
-            ,[0,0,1,2,3,1,0,0]
-            ,[0,0,0,3,3,0,0,0]
-            ,[0,0,0,0,0,0,0,0]
             ,[0,0,0,0,0,0,0,0]
             ,[0,0,0,0,0,0,0,0]]
         else:
             weighted_board = [
             [0,0,0,0,0,0,0,0]
             ,[0,0,0,0,0,0,0,0]
-            ,[3,7,7,7,7,7,7,3]
-            ,[4,8,20,40,40,20,8,4]
-            ,[5,9,20,35,35,20,9,5]
-            ,[6,10,15,30,30,15,10,6]
-            ,[1,11,12,25,25,12,11,1]
-            ,[0,1,9,8,8,9,1,0]]
-        for p in o_pieces:
+            ,[0,0,0,1,1,0,0,0]
+            ,[0,0,1,6,6,1,0,0]
+            ,[0,1,3,5,5,3,1,0]
+            ,[0,1,3,4,4,3,1,0]
+            ,[0,0,1,2,2,1,0,0]
+            ,[0,0,0,0,0,0,0,0]]
+
+        for p in state.o_pieces:
             total += weighted_board[p[0]][p[1]]
-        """
-        if self.curr_turn == 'white':
-            ideal_places1 = [(4,3),(4,4),(3,3),(3,4),(2,3),(2,4),(1,4),(1,3)]
-            ideal_places2 = [(4,2),(4,5),(3,2),(3,5),(2,2),(2,5)]
-        else:
-            ideal_places1 = [(4,3),(4,4),(6,3),(6,4),(5,3),(5,4),(3,3),(3,4)]
-            ideal_places2 = [(4,2),(4,5),(3,2),(3,5),(2,2),(2,5)]
-        for p in o_pieces:
-            if p in ideal_places1:
-                total += 2
-            if p in ideal_places2:
-                total += 1
-        """
         
         return total
 
     # Returns the score of a given board state based on placement features.
-    def eval_placement(self,o_pieces, e_pieces, board):
-        num_diff_pieces = Player.num_diff_pieces(self,o_pieces, e_pieces)
-        edan_o_pieces = Player.chk_edan_placement(o_pieces, 'B', board)
-        edan_e_pieces = Player.chk_edan_placement(e_pieces, 'W', board)
-        ideal_place = Player.ideal_placement(self,o_pieces,e_pieces,board)
+    def eval_placement(self,state):
+        total = 0
 
-        return 50*num_diff_pieces - edan_o_pieces + edan_e_pieces + 49*ideal_place
+        while state is not None:
+            ideal_place = Player.ideal_placement(self,state)
+            num_diff_pieces = Player.num_diff_pieces(self,state)
+            edan_o_pieces = Player.chk_edan_placement(state.o_pieces, 'B', state.board)
+            edan_e_pieces = Player.chk_edan_placement(state.e_pieces, 'W', state.board)
+
+            total += (3-state.depth)*(50*num_diff_pieces - edan_o_pieces + edan_e_pieces + 30*ideal_place)
+
+            state = state.prev_state
+
+        return total
 
     # Returns the score of a given board state based on movement features.
-    def eval_movement(self,total_num_moves,o_pieces,e_pieces,corners,board):
+    def eval_movement(self,total_num_moves,state):
+        total = 0
 
-        shrink_eval = 0
-        num_diff_pieces = Player.num_diff_pieces(self,o_pieces, e_pieces)
-        edan_o_pieces = Player.chk_edan_movement(o_pieces, 'B', board)
-        edan_e_pieces = Player.chk_edan_movement(e_pieces, 'W', board)
-        fortress = Player.maintain_fort(self,o_pieces,e_pieces,board)
+        while state is not None:
+            num_diff_pieces = Player.num_diff_pieces(self,state)
+            edan_o_pieces = Player.chk_edan_movement(state.o_pieces, 'B', state.board)
+            edan_e_pieces = Player.chk_edan_movement(state.e_pieces, 'W', state.board)
+            fortress = Player.maintain_fort(self,state)
+            centralised = Player.move_to_centre(self,state)
+            shrink_eval = 0
+            if (total_num_moves > 128 and total_num_moves < 152) or (total_num_moves > 192 and total_num_moves < 216):
+                shrink_eval = Player.chk_shrink_edan(self,total_num_moves,state)
+
+            total += (3-state.depth)*(50*num_diff_pieces - edan_o_pieces + edan_e_pieces + shrink_eval - centralised+ 30*fortress)
+
+            state = state.prev_state
         
-        if (total_num_moves > 128 and total_num_moves < 152) or (total_num_moves > 192 and total_num_moves < 216):
-            shrink_eval = Player.chk_shrink_edan(self,total_num_moves,o_pieces,e_pieces,board)
-
-        return 50*num_diff_pieces - edan_o_pieces + edan_e_pieces + shrink_eval + 49*fortress
+        return total
 
     #COMPLETE EVALUATION FUNCTION FOR ALPHA BETA
-    def evaluate(self,total_num_moves,curr_depth,board,o_pieces,e_pieces,corners):
+    def evaluate(self,total_num_moves,curr_depth,state):
 
         # Placement stage.
         if total_num_moves < 24:
-            return Player.eval_placement(self,o_pieces, e_pieces, board)
+            return Player.eval_placement(self,state)
 
         # Movement stage.
         else:
-            return Player.eval_movement(self,total_num_moves,o_pieces, e_pieces, corners,board)
+            return Player.eval_movement(self,total_num_moves,state)
 
-    def alpha_beta(self,o_pieces,e_pieces,corners,board):
+    def alpha_beta(self,state):
+
         best_val = -10000
         beta = 10000
 
-        corners_copy = corners
-
         if self.total_moves >= 24:
-            poss_moves = Player.legal_moves(o_pieces,e_pieces,board)
+            poss_moves = Player.legal_moves(self,state)
         else:
-            poss_moves = Player.legal_placements(self,o_pieces,e_pieces,board)
+            poss_moves = Player.legal_placements(state)
+
+        if len(poss_moves) == 0:
+            self.best_move = None
+            return
         
         for move in poss_moves:
             #must make copies of all resources before evaluating and furthering search
-            board_copy = copy.deepcopy(board)
-            o_p_copy = copy.deepcopy(o_pieces)
-            e_p_copy = copy.deepcopy(e_pieces)
+            #board_copy = deepcopy(state.board)
+            #o_p_copy = deepcopy(state.o_pieces)
+            #e_p_copy = deepcopy(state.e_pieces)
+            #colour_copy = deepcopy(state.colour)
+            #corners_copy = deepcopy(state.corners)
+
+            #state_copy = State(colour_copy,o_p_copy,e_p_copy,corners_copy,board_copy,0)
+            state_copy = deepcopy(state)
 
             #makes move in copied resources 
             if self.total_moves >= 24:
-                Player.complete_move(move,self.curr_turn,o_p_copy,e_p_copy,corners_copy,board_copy)
+                Player.complete_move(self,move,state_copy)
             else:
-                Player.complete_place(move,self.curr_turn,o_p_copy,e_p_copy,corners_copy,board_copy)
+                Player.complete_place(self,move,state_copy)
 
-            value = Player.min_value(self,best_val,beta,board_copy,o_p_copy,e_p_copy,corners_copy,0)
+            if state_copy.colour == 'black':
+                state_copy.colour = 'white'
+            else:
+                state_copy.colour = 'black'
+
+            value = Player.min_value(self,best_val,beta,state_copy,0)
 
             if value > best_val:
                 best_val = value
@@ -553,42 +606,44 @@ class Player(object):
                 else:
                     self.best_placement = move
 
-    def max_value(self,alpha, beta, board, o_pieces, e_pieces, corners, curr_depth):
+    def max_value(self,alpha, beta, state, curr_depth):
         #depth limit has been reached or game has ended will cause state to be evaluated 
-        if curr_depth >= self.p_depth or Player.check_game_end(o_pieces,e_pieces):
-            score = Player.evaluate(self,self.total_moves,curr_depth,board,o_pieces,e_pieces,corners)
+        if curr_depth >= self.p_depth or Player.check_game_end(state):
+            score = Player.evaluate(self,self.total_moves,curr_depth,state)
             return score
-        
-        corners_copy = corners
 
         #ensures board is right size before finding all possible moves
         if self.total_moves + curr_depth == 152:
-            corners_copy = copy.deepcopy(corners)
-            Player.shrink_gameboard("medium",o_pieces,e_pieces,corners_copy,board)
+            Player.shrink_gameboard("medium",state)
         elif self.total_moves + curr_depth == 216:
-            corners_copy = copy.deepcopy(corners)
-            Player.shrink_gameboard("small",o_pieces,e_pieces,corners_copy,board)
+            Player.shrink_gameboard("small",state)
 
         value = -10000
         #gets all possible moves capable by the specific player
         if self.total_moves >= 24:
-            poss_moves = Player.legal_moves(o_pieces,e_pieces,board)
+            poss_moves = Player.legal_moves(self,state)
         else:
-            poss_moves = Player.legal_placements(self,o_pieces,e_pieces,board)
+            poss_moves = Player.legal_placements(state)
 
         for move in poss_moves:
             #must make copies of all resources before evaluating and furthering search
-            board_copy = copy.deepcopy(board)
-            o_p_copy = copy.deepcopy(o_pieces)
-            e_p_copy = copy.deepcopy(e_pieces)
+            state_copy = deepcopy(state)
+
+            state_copy.depth = curr_depth+1
+            state_copy.prev_state = state
 
             #makes move in copied resources 
             if self.total_moves >= 24:
-                Player.complete_move(move,self.curr_turn,o_p_copy,e_p_copy,corners_copy,board_copy)
+                Player.complete_move(self,move,state_copy)
             else:
-                Player.complete_place(move,self.curr_turn,o_p_copy,e_p_copy,corners_copy,board_copy)
+                Player.complete_place(self,move,state_copy)
 
-            value = max(value, Player.min_value(self,alpha,beta,board_copy,o_p_copy,e_p_copy,corners_copy,curr_depth+1))
+            if state_copy.colour == 'black':
+                state_copy.colour = 'white'
+            else:
+                state_copy.colour = 'black'
+
+            value = max(value, Player.min_value(self,alpha,beta,state_copy,curr_depth+1))
 
             if value >= beta:
                 return value
@@ -597,41 +652,44 @@ class Player(object):
 
         return value
 
-    def min_value(self,alpha, beta, board, o_pieces, e_pieces, corners, curr_depth):
+    def min_value(self,alpha, beta, state, curr_depth):
         #depth limit has been reached or game has ended will cause state to be evaluated 
-        if curr_depth >= self.p_depth or Player.check_game_end(o_pieces,e_pieces):
-            score = Player.evaluate(self,self.total_moves,curr_depth,board,o_pieces,e_pieces,corners)
+        if curr_depth >= self.p_depth or Player.check_game_end(state):
+            score = Player.evaluate(self,self.total_moves,curr_depth,state)
             return score
-        
-        corners_copy = corners
 
         #ensures board is right size before finding all possible moves
         if self.total_moves + curr_depth == 152:
-            corners_copy = copy.deepcopy(corners)
-            Player.shrink_gameboard("medium",o_pieces,e_pieces,corners_copy,board)
-        elif self.total_moves + curr_depth == 216:
-            corners_copy = copy.deepcopy(corners)
-            Player.shrink_gameboard("small",o_pieces,e_pieces,corners_copy,board)
+            Player.shrink_gameboard("medium",state)
+        elif self.total_moves + curr_depth == 216:\
+            Player.shrink_gameboard("small",state)
 
         value = 10000
         #gets all possible moves capable by the specific player
         if self.total_moves >= 24:
-            poss_moves = Player.legal_moves(o_pieces,e_pieces,board)
+            poss_moves = Player.legal_moves(self,state)
         else:
-            poss_moves = Player.legal_placements(self,o_pieces,e_pieces,board)
+            poss_moves = Player.legal_placements(state)
 
         for move in poss_moves:
-            board_copy = copy.deepcopy(board)
-            o_p_copy = copy.deepcopy(o_pieces)
-            e_p_copy = copy.deepcopy(e_pieces)
+            state_copy = deepcopy(state)
+
+            state_copy.depth = curr_depth+1
+            state_copy.prev_state = state
 
             #makes move in copied resources 
             if self.total_moves >= 24:
-                Player.complete_move(move,self.curr_turn,o_p_copy,e_p_copy,corners_copy,board_copy)
+                Player.complete_move(self,move,state_copy)
             else:
-                Player.complete_place(move,self.curr_turn,o_p_copy,e_p_copy,corners_copy,board_copy)
+                Player.complete_place(self,move,state_copy)
 
-            value = min(value, Player.max_value(self,alpha,beta,board_copy,o_p_copy,e_p_copy,corners_copy,curr_depth+1))
+            if state_copy.colour == 'black':
+                state_copy.colour = 'white'
+            else:
+                state_copy.colour = 'black'
+
+            value = min(value, Player.max_value(self,alpha,beta,state_copy,curr_depth+1))
+
             if value <= alpha:
                 return value
             beta = min(beta, value)
@@ -688,11 +746,14 @@ class Player(object):
         self.total_moves = 0
         #tracks who's turn it is
         self.curr_turn = 'white'
-        self.our_pieces = []
-        self.enemy_pieces = []
-        self.corners = []
+        #self.our_pieces = []
+        #self.enemy_pieces = []
+        #self.corners = []
         self.colour = colour
-        self.gameboard = Player.init_gameboard(self)
+        #self.gameboard = Player.init_gameboard(self)
+        self.curr_state = State('white',[],[],[],[],0)
+        self.curr_state.board = Player.init_gameboard(self.curr_state)
+
 
     #used for testing to see the current state of our gameboard in a formatted way
     def print_gameboard(board):
@@ -703,46 +764,50 @@ class Player(object):
 
         #shrinks gameboard at start of turn 128 and 192 for white player (first player to move)
         if (turns == 128 and self.colour == "white"):
-            Player.shrink_gameboard("medium",self.enemy_pieces,self.our_pieces,self.corners,self.gameboard)
+            Player.shrink_gameboard("medium",self.curr_state)
         elif (turns == 192 and self.colour == "white"):
-            Player.shrink_gameboard("small",self.enemy_pieces,self.our_pieces,self.corners,self.gameboard)
+            Player.shrink_gameboard("small",self.curr_state)
 
         if self.total_moves < 24:
             #rand_place = Player.random_place(self)
             #Player.complete_place(rand_place,self.curr_turn,self.our_pieces,self.enemy_pieces,self.corners,self.gameboard)
-            Player.alpha_beta(self,self.our_pieces,self.enemy_pieces,self.corners,self.gameboard)
-            Player.complete_place(self.best_placement,self.curr_turn,self.our_pieces,self.enemy_pieces,self.corners,self.gameboard)
+            Player.alpha_beta(self,self.curr_state)
+            Player.complete_place(self,self.best_placement,self.curr_state)
             
             if self.curr_turn == 'black':
                 self.curr_turn = 'white'
+                self.curr_state.colour = 'white'
             else:
                 self.curr_turn = 'black'
+                self.curr_state.colour = 'black'
 
             self.total_moves += 1
 
             #return Player.reverse_move(rand_place)
             return Player.reverse_move(self.best_placement)
         else:
-            Player.alpha_beta(self,self.our_pieces,self.enemy_pieces,self.corners,self.gameboard)
+            Player.alpha_beta(self,self.curr_state)
 
             # Added here.
             #print("selected move: ",self.best_move, "curr_turn: ",self.curr_turn, " turns: ", turns)
             # Added here.
 
-            Player.complete_move(self.best_move,self.curr_turn,self.our_pieces,self.enemy_pieces,self.corners,self.gameboard)
+            Player.complete_move(self,self.best_move,self.curr_state)
 
             if self.curr_turn == 'black':
                 self.curr_turn = 'white'
+                self.curr_state.colour = 'white'
             else:
                 self.curr_turn = 'black'
+                self.curr_state.colour = 'black'
 
             self.total_moves += 1
 
             #shrinks gameboard for black player at the end of their 127 or 191 turn to avoid any corner capture errors
             if (turns == 127 and self.colour == "black"):
-                Player.shrink_gameboard("medium",self.enemy_pieces,self.our_pieces,self.corners,self.gameboard)
+                Player.shrink_gameboard("medium",self.curr_state)
             elif (turns == 191 and self.colour == "black"):
-                Player.shrink_gameboard("small",self.enemy_pieces,self.our_pieces,self.corners,self.gameboard)
+                Player.shrink_gameboard("small",self.curr_state)
             
             #print(self.our_pieces)
             #print(self.enemy_pieces)
@@ -754,22 +819,41 @@ class Player(object):
         if action is not None:
             #checks if action is movement(tuple inside tuple) or placement(single tuple)
             if isinstance(action[0], tuple):
-                Player.complete_move(Player.reverse_move(action),self.curr_turn,self.enemy_pieces,self.our_pieces,self.corners,self.gameboard)
+                Player.complete_move(self,Player.reverse_move(action),self.curr_state)
             else:
-                Player.complete_place(Player.reverse_move(action),self.curr_turn,self.enemy_pieces,self.our_pieces,self.corners,self.gameboard)
+                Player.complete_place(self,Player.reverse_move(action),self.curr_state)
 
         if self.curr_turn == 'black':
             self.curr_turn = 'white'
+            self.curr_state.colour = 'white'
         else:
             self.curr_turn = 'black'
+            self.curr_state.colour = 'black'
+
         self.total_moves += 1
 
 class State:
 
-    def __init(self):
-        self.o_pieces = []
-        self.e_pieces = []
-        self.corners = []
-        self.board = Player.init_gameboard(self)
-        self.depth = 0
-        self.prev_states = []
+    def __init__(self,colour,o_pieces,e_pieces,corners,board,depth):
+        self.colour = colour
+        self.o_pieces = o_pieces
+        self.e_pieces = e_pieces
+        self.corners = corners
+        self.board = board
+        self.depth = depth
+        self.prev_state = None
+
+    def __deepcopy__(self, memo): # memo is a dict of id's to copies
+        id_self = id(self)        # memoization avoids unnecesary recursion
+        _copy = memo.get(id_self)
+        if _copy is None:
+            _copy = type(self)(
+                deepcopy(self.colour, memo), 
+                deepcopy(self.o_pieces, memo),
+                deepcopy(self.e_pieces, memo),
+                deepcopy(self.corners, memo),
+                deepcopy(self.board, memo),
+                0)
+            memo[id_self] = _copy 
+        return _copy
+
