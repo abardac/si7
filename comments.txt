@@ -6,7 +6,7 @@ Evaluation Function Analysis:
 Our AI player calculates the score of each gameboard state using the following features (depending on which stage of the game it currently is):
 
   1) (Both Stages) Difference in the number of our pieces vs opponent's pieces:
-    - More specifically, it calculates the change in the number of our pieces and their pieces (based on piece numbers from the original gameboard vs those of the current explored gameboard).
+    - More specifically, it calculates the change in the number of their pieces vs our pieces (based on piece numbers from the original gameboard vs those of the current explored gameboard).
     - Used to determine whether we have a piece advantage or not.
 
   2) (Both Stages) Number of our pieces that are endangered:
