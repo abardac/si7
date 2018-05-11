@@ -13,19 +13,19 @@ class State:
     Initialises a gameboard state with relevant attributes.
     '''
     def __init__(self,colour,o_pieces,e_pieces,corners,board,depth):
-        self.colour = colour
+        self.colour = colour #the colour of the player who's turn it is in that state
         self.o_pieces = o_pieces
         self.e_pieces = e_pieces
         self.corners = corners
         self.board = board
         self.depth = depth
-        self.prev_state = None
+        self.prev_state = None #the state previous to this one in the alpha beta
 
     '''
     Creates a copy of the state to be used while searching.
     '''
     def __deepcopy__(self, memo): # memo is a dict of id's to copies.
-        id_self = id(self)        # memorization avoids unnecesary recursion.
+        id_self = id(self)        # memorization avoids unnecessary recursion.
         _copy = memo.get(id_self)
         if _copy is None:
             _copy = type(self)(
@@ -168,6 +168,7 @@ class Player(object):
     Note: Part of alpha beta, so it's given copied state resources to work with.
     '''
     def check_capture_after_action(self,action,state):
+        #ensures we are using the correct resources for 'our' move or enemy's
         if state.colour == self.colour:
             o_pieces = state.o_pieces
             e_pieces = state.e_pieces
@@ -217,7 +218,7 @@ class Player(object):
     Note: Part of alpha beta, so it's given copied state resources to work with.
     '''
     def complete_move(self,move,state):
-
+        #ensures we are using the correct resources for the movement
         if state.colour == self.colour:
             pieces = state.o_pieces
         else:
@@ -279,7 +280,6 @@ class Player(object):
     '''
     def can_jump(x,y,mid_x,mid_y,state):
         if x >= 0 and x <= 7 and y >= 0 and y <= 7:
-
             '''
             Only if there's a piece between the dest and,
             a piece's current loc will it possibly be allowed to jump.
@@ -289,7 +289,6 @@ class Player(object):
                     return True
                 else: 
                     return False
-
             elif (mid_x,mid_y) in state.e_pieces:
                 if state.board[x][y] == '-':
                     return True
@@ -305,11 +304,11 @@ class Player(object):
     Note: Part of alpha beta, so it's given copied state resources to work with.
     '''
     def legal_moves(self,state):
-        
         if state.colour == self.colour:
             pieces = state.o_pieces
         else:
             pieces = state.e_pieces
+
         moves = []
 
         for p in pieces:
@@ -335,7 +334,9 @@ class Player(object):
         else:
             fir_lim = 2
             sec_lim = 7
+
         placements = []
+
         for i in range(fir_lim,sec_lim):
             for j in range(8):
                 if state.board[i][j] == '-':
@@ -512,6 +513,10 @@ class Player(object):
     Calculates the weighting for determining movements close to the gameboard shrinking.
     '''
     def get_panic_weight(move_diff,piece_diff):
+        '''
+        if we are at a piece disadvantage, moving away from the edges is in our best 
+        interests, if at an advantage then we can afford to give up some pieces if necessary
+        '''
         if piece_diff <= 0:
             return (50*(abs(piece_diff)+1))/move_diff
         else: 
@@ -635,13 +640,15 @@ class Player(object):
     def eval_placement(self,state):
         total = 0
 
+        #loops through all states that led to the terminal state
         while state is not None:
             num_diff_pieces = Player.num_diff_pieces(self,state)
             edan_o_pieces = Player.chk_edan_placement(state.o_pieces, 'B', state.board)
             edan_e_pieces = Player.chk_edan_placement(state.e_pieces, 'W', state.board)
             ideal_place = Player.ideal_placement(self,state)
 
-            total += (3-state.depth)*(50*num_diff_pieces - edan_o_pieces + edan_e_pieces + 30*ideal_place)
+            #give a greater weighting to earlier stages to ensure we making the better choices early on
+            total += (3-state.depth)*(150*num_diff_pieces - 120*edan_o_pieces + 20*edan_e_pieces + 5*ideal_place)
             state = state.prev_state
 
         return total
@@ -663,7 +670,7 @@ class Player(object):
             if (total_num_moves > 128 and total_num_moves < 152) or (total_num_moves > 192 and total_num_moves < 216):
                 shrink_eval = Player.chk_shrink_edan(self,total_num_moves,state)
 
-            total += (3-state.depth)*(50*num_diff_pieces - edan_o_pieces + edan_e_pieces + shrink_eval - centralised + 30*fortress)
+            total += (3-state.depth)*(150*num_diff_pieces - 120*edan_o_pieces + 30*edan_e_pieces + 40*shrink_eval - 20*centralised + 15*fortress)
             state = state.prev_state
         
         return total
@@ -677,30 +684,30 @@ class Player(object):
         # Placement stage.
         if total_num_moves < 24:
             return Player.eval_placement(self,state)
-
         # Movement stage.
         else:
             return Player.eval_movement(self,total_num_moves,state)
 
     '''
     Our alpha beta implementation.
-    *** Optional: Add basic description?
     '''
     def alpha_beta(self,state):
-
         beta = 10000
-        best_val = -10000
+        alpha = -10000
 
+        #Gets all possible moves capable by the specific player.
         if self.total_moves >= 24:
             poss_moves = Player.legal_moves(self,state)
         else:
             poss_moves = Player.legal_placements(state)
 
+        #If no possible moves then must return a 'None' move to referee.
         if len(poss_moves) == 0:
             self.best_move = None
             return
         
         for move in poss_moves:
+            #Makes a copy of the state before searching.
             state_copy = deepcopy(state)
 
             # Makes move in the copied state.
@@ -709,15 +716,15 @@ class Player(object):
             else:
                 Player.complete_place(self,move,state_copy)
 
-            if state_copy.colour == 'black':
-                state_copy.colour = 'white'
-            else:
-                state_copy.colour = 'black'
+            #Change colour of new state as the other player must now make their move
+            state_copy.colour = Player.change_colour(state_copy.colour)
 
-            value = Player.min_value(self,best_val,beta,state_copy,0)
+            value = Player.min_value(self,alpha,beta,state_copy,0)
 
-            if value > best_val:
-                best_val = value
+            #If returned value is greater than the current alpha then that is the best action so far
+            if value > alpha:
+                #This greater value is the new alpha
+                alpha = value
                 if self.total_moves >= 24:
                     self.best_move = move
                 else:
@@ -747,11 +754,11 @@ class Player(object):
             poss_moves = Player.legal_placements(state)
 
         for move in poss_moves:
-
             # Makes a copy of the state before searching.
             state_copy = deepcopy(state)
 
             state_copy.depth = curr_depth+1
+            #Adds previous state in record for better evaluation 
             state_copy.prev_state = state
 
             # Makes the move in the copied state.
@@ -760,15 +767,19 @@ class Player(object):
             else:
                 Player.complete_place(self,move,state_copy)
 
-            if state_copy.colour == 'black':
-                state_copy.colour = 'white'
-            else:
-                state_copy.colour = 'black'
+            state_copy.colour = Player.change_colour(state_copy.colour)
 
             value = max(value, Player.min_value(self,alpha,beta,state_copy,curr_depth+1))
 
+            '''
+            prunes the rest of poss_moves if score returned is greater than beta
+            because even if score would increase (since it is maximising player),
+            beta will never get smaller and theres no point checking the rest as the 
+            minimising player wouldn't choose anything down this branch. 
+            '''
             if value >= beta:
                 return value
+
             alpha = max(alpha, value)
 
         return value
@@ -787,7 +798,7 @@ class Player(object):
         # Ensures board is the right size before finding all possible moves.
         if self.total_moves + curr_depth == 152:
             Player.shrink_gameboard("medium",state)
-        elif self.total_moves + curr_depth == 216:\
+        elif self.total_moves + curr_depth == 216:
             Player.shrink_gameboard("small",state)
 
         # Gets all possible moves capable by the specific player.
@@ -797,7 +808,6 @@ class Player(object):
             poss_moves = Player.legal_placements(state)
 
         for move in poss_moves:
-
             # Makes a copy of the state before searching.
             state_copy = deepcopy(state)
 
@@ -810,15 +820,20 @@ class Player(object):
             else:
                 Player.complete_place(self,move,state_copy)
 
-            if state_copy.colour == 'black':
-                state_copy.colour = 'white'
-            else:
-                state_copy.colour = 'black'
+            state_copy.colour = Player.change_colour(state_copy.colour)
 
             value = min(value, Player.max_value(self,alpha,beta,state_copy,curr_depth+1))
 
+            '''
+            prunes the rest of poss_moves if value is less than alpha
+            because even if the minimising player gets a better (lower) score, it 
+            will never be higher than alpha and so is not important for the
+            topmost maximising player, and so min player will return its best (min) score
+            which is its beta value
+            '''
             if value <= alpha:
                 return value
+
             beta = min(beta, value)
 
         return value
@@ -841,6 +856,15 @@ class Player(object):
             return (fir_y,fir_x)
 
     '''
+    Changes the player to the other colour
+    '''
+    def change_colour(colour):
+        if colour == 'black':
+            return 'white'
+        else:
+            return 'black'
+
+    '''
     Decides on an action based on variables such as:
         Gameboard phase (Placement/Movement)
     Uses alpha beta to finding the best outcome action.
@@ -855,31 +879,26 @@ class Player(object):
 
         # If in placement stage.
         if self.total_moves < 24:
-            
             Player.alpha_beta(self,self.curr_state)
             Player.complete_place(self,self.best_placement,self.curr_state)
-            
-            if self.curr_turn == 'black':
-                self.curr_turn = 'white'
-                self.curr_state.colour = 'white'
-            else:
-                self.curr_turn = 'black'
-                self.curr_state.colour = 'black'
+
+            #Changes colour in the player and state for who's turn it is
+            self.curr_turn = Player.change_colour(self.curr_turn)
+            self.curr_state.colour = Player.change_colour(self.curr_state.colour)
 
             self.total_moves += 1
+
             return Player.reverse_move(self.best_placement)
 
         # If in movement stage.
         else:
             Player.alpha_beta(self,self.curr_state)
-            Player.complete_move(self,self.best_move,self.curr_state)
+            if self.best_move is not None:
+                Player.complete_move(self,self.best_move,self.curr_state)
 
-            if self.curr_turn == 'black':
-                self.curr_turn = 'white'
-                self.curr_state.colour = 'white'
-            else:
-                self.curr_turn = 'black'
-                self.curr_state.colour = 'black'
+            #Changes colour in the player and state for who's turn it is
+            self.curr_turn = Player.change_colour(self.curr_turn)
+            self.curr_state.colour = Player.change_colour(self.curr_state.colour)
 
             self.total_moves += 1
 
@@ -903,11 +922,8 @@ class Player(object):
             else:
                 Player.complete_place(self,Player.reverse_move(action),self.curr_state)
 
-        if self.curr_turn == 'black':
-            self.curr_turn = 'white'
-            self.curr_state.colour = 'white'
-        else:
-            self.curr_turn = 'black'
-            self.curr_state.colour = 'black'
+        #Changes colour in the player and state for who's turn it is
+        self.curr_turn = Player.change_colour(self.curr_turn)
+        self.curr_state.colour = Player.change_colour(self.curr_state.colour)
 
         self.total_moves += 1

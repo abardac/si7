@@ -7,6 +7,7 @@ Our AI player calculates the score of each gameboard state using the following f
 
   1) (Both Stages) Difference in the number of our pieces vs opponent's pieces:
     - More specifically, it calculates the change in the number of their pieces vs our pieces (based on piece numbers from the original gameboard vs those of the current explored gameboard).
+    - It is done using the original state so that we don’t lose any piece advantage we had previously, i.e. if we had 2 more pieces than the opponent in the original state, we don’t want to make a move which would reduce us to just a 1 piece advantage.
     - Used to determine whether we have a piece advantage or not.
 
   2) (Both Stages) Number of our pieces that are endangered:
@@ -20,16 +21,27 @@ Our AI player calculates the score of each gameboard state using the following f
   4) (Placement Only) Number of ideal positions that our pieces hold:
     - Used to give weights to particular positions on the gameboard.
     - Helps setup our "fortress strategy" in the movement stage (explained down below).
+    - An idealised setup is one of a cross near the centre of the board (seen in the weighted_board variable) since this would mean a completely fortified setup from any outside threats, but allowing for piece movement when necessary. The horizontal ‘wing’ pieces are considered our ‘defending’ pieces as they are the ones that will most likely move in case of an attack on our main vertical fort sequence. 
     - Note: Changes some of the ideal positions to hold based on whether the player is white or black.
 
   5) (Movement Only) Number of our pieces that help form an ideal fort:
     - We called this feature our "fortress strategy"
     - Used to help form a 2x2 fort, with three different positions for choosing where to form a fort based on the state of the gameboard. Each of the three fort positions are weighed differently to prioritise having the best fort currently possible.
-    - "Explain why we created the fortress strategy and what value it brings"
+    - Through our play of the game we realised that holding a ‘fort’ (2x2 square of pieces) is an optimal strategy since the opponent cannot capture any of the pieces in it if it is maintained. Since the game board shrinks, holding a fort in the centre of the board is more advantageous because firstly it’s not in danger of being removed when the board shrinks, and secondly the opponent will have to move around this fort, and thus are in more danger of being captured. We have weighted the forts from the centre of the board to our side of the board from most to least important since the forts closer to the edge are in more danger of being wiped out in a shrink. 
     - Note: Changes the positions of each ideal fort according to whether the player is white or black.
 
-  6) (Movement Only) Number of pieces that are endangered by the shrinking of the gameboard:
+  6) (Movement Only) Distance from the centre of the board:
+    - Checks the distance from a piece to the centre of the board.
+    - Gives a greater weighting to a movement from the outside edge to move closer to our ideal ‘fort’ near the centre of the board.
+    - Moving closer to the fort gives that piece more safety as it has more pieces to help defend.
+    - Also means that if we were unsuccessful in setting up a fort, moving to the centre of the board is an ideal strategy as it’ll give us a chance to set one up later on if we see an opportunity. 
+
+  7) (Movement Only) Number of pieces that are endangered by the shrinking of the gameboard:
     - Checks if the gameboard is close to one of its shrinking phases.
     - Checks how many of our pieces are currently, or will be, in danger of being eliminated due to shrinking.
     - Assigns an increasing "panic" weight as the game comes closer to shrinking, so that moves/states that lead endangered pieces to safety are increasingly prioritised.
       - Note: If we currently have a pieces disadvantage, greater priority is given to get what remaining pieces we have left out of the shrinking area. This is because we can't afford to lose any more pieces with a pieces disadvantage, as opposed to making riskier plays when we have the advantage.
+
+  8) (Both Stages) Involving previous states in the evaluation:
+    - We had noticed that with our evaluation function two different sequence of moves would get the same evaluation score and thus it would be just be whichever one is tested first that will be chosen. And so we might end up in a situation where a random movement followed by a piece capture (seen through alpha beta searching) is chosen over the sequence of a capture then random movement. Ideally we would want our player to capture a piece first and then later on make a random movement if necessary.
+    - To solve this issue we decided on adding in the previous state in the alpha beta evaluation and use these previous states to make the best decision. So we give a greater weighting to the earlier states as a capture first is idealised over a random movement first (followed by said capture later on). 
