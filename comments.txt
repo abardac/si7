@@ -3,6 +3,7 @@ A Programmer's Tale: Part B Analysis (By Andrew and Pierre).
 Main Approach: Standard Minimax & Alpha Beta.
 
 Evaluation Function Analysis:
+Note: Feature weights were tested with and chosen according to what we thought the priority of each feature was.
 Our AI player calculates the score of each gameboard state using the following features (depending on which stage of the game it currently is):
 
   1) (Both Stages) Difference in the number of our pieces vs opponent's pieces:
